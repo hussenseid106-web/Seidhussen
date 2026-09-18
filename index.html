@@ -163,6 +163,26 @@
 
     .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
 
+    /* Modal Overlay */
+    .modal-overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0, 0, 0, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+
+    .modal-card {
+      background-color: var(--card-bg);
+      padding: 2rem;
+      border-radius: 0.5rem;
+      width: 100%;
+      max-width: 500px;
+      border: 1px solid var(--border);
+    }
+
     footer {
       text-align: center;
       padding: 1rem;
@@ -252,7 +272,7 @@
           </select>
         </div>
         <div style="display:flex; align-items:flex-end;">
-          <button class="btn-primary" onclick="handleRegisterStudent()">+ Register New Student</button>
+          <button class="btn-primary" onclick="openRegisterModal()">+ Register New Student</button>
         </div>
       </div>
 
@@ -280,12 +300,47 @@
 
   </div>
 
+  <!-- REGISTER STUDENT MODAL -->
+  <div id="registerModal" class="modal-overlay hidden">
+    <div class="modal-card">
+      <h3 style="margin-bottom: 1rem;">Register New Student</h3>
+      <form onsubmit="handleRegisterStudentSubmit(event)">
+        <div class="form-group">
+          <label for="regUsername">Username</label>
+          <input type="text" id="regUsername" required placeholder="e.g. tigist">
+        </div>
+        <div class="form-group">
+          <label for="regFullName">Full Name</label>
+          <input type="text" id="regFullName" required placeholder="e.g. Tigist Haile">
+        </div>
+        <div class="form-group">
+          <label for="regPassword">Password</label>
+          <input type="password" id="regPassword" required placeholder="Assign password">
+        </div>
+        <div class="grid-2">
+          <div class="form-group">
+            <label for="regGrade">Grade Level</label>
+            <input type="text" id="regGrade" required placeholder="e.g. 12">
+          </div>
+          <div class="form-group">
+            <label for="regSection">Section</label>
+            <input type="text" id="regSection" required value="A">
+          </div>
+        </div>
+        <div id="registerError" class="error-msg hidden" style="margin-bottom:1rem;"></div>
+        <div style="display:flex; justify-content:flex-end; gap:0.5rem;">
+          <button type="button" onclick="closeRegisterModal()">Cancel</button>
+          <button type="submit" class="btn-primary">Register Student</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <footer>
     &copy; <span id="year"></span> Harbu Secondary School API System
   </footer>
 
   <script>
-    // Live Render Backend URL
     const API_BASE_URL = "https://school-result-backend.onrender.com/api";
 
     let activeRole = 'student';
@@ -294,6 +349,23 @@
     let selectedStudent = null;
 
     document.getElementById("year").textContent = new Date().getFullYear();
+
+    /* HELPER: Escape HTML to prevent XSS attacks */
+    function escapeHTML(str) {
+      if (!str) return '';
+      return String(str).replace(/[&<>"']/g, match => {
+        const escapeMap = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
+        return escapeMap[match];
+      });
+    }
+
+    /* HELPER: Headers with optional Bearer Token */
+    function getAuthHeaders(includeJson = true) {
+      const headers = {};
+      if (includeJson) headers['Content-Type'] = 'application/json';
+      if (currentAuthToken) headers['Authorization'] = `Bearer ${currentAuthToken}`;
+      return headers;
+    }
 
     function toggleTheme() {
       const newTheme = document.body.getAttribute("data-theme") === "dark" ? "light" : "dark";
@@ -384,7 +456,7 @@
       document.getElementById("logoutBtn").classList.remove("hidden");
 
       document.getElementById("studentNameDisplay").textContent = student.fullName;
-      document.getElementById("studentMeta").textContent = `Grade ${student.grade} | Section ${student.section}`;
+      document.getElementById("studentMeta").textContent = `Grade ${escapeHTML(student.grade)} | Section ${escapeHTML(student.section)}`;
 
       const tbody = document.getElementById("studentResultsBody");
       tbody.innerHTML = "";
@@ -398,9 +470,9 @@
         const isPass = res.score >= 50;
         tbody.innerHTML += `
           <tr>
-            <td><strong>${res.subject}</strong></td>
-            <td>${res.score}/100</td>
-            <td>${res.grade}</td>
+            <td><strong>${escapeHTML(res.subject)}</strong></td>
+            <td>${escapeHTML(res.score)}/100</td>
+            <td>${escapeHTML(res.grade || '-')}</td>
             <td><span class="badge ${isPass ? 'badge-pass' : 'badge-fail'}">${isPass ? 'PASS' : 'FAIL'}</span></td>
           </tr>
         `;
@@ -414,16 +486,21 @@
       document.getElementById("logoutBtn").classList.remove("hidden");
 
       try {
-        const response = await fetch(`${API_BASE_URL}/students`);
+        const response = await fetch(`${API_BASE_URL}/students`, {
+          headers: getAuthHeaders(false)
+        });
+
+        if (!response.ok) throw new Error("Failed to load students.");
+
         studentsCache = await response.json();
 
         const select = document.getElementById("studentSelect");
         select.innerHTML = `<option value="">-- Choose Student --</option>`;
         studentsCache.forEach(s => {
-          select.innerHTML += `<option value="${s._id}">${s.fullName} (${s.username.toUpperCase()}) - Grade ${s.grade}</option>`;
+          select.innerHTML += `<option value="${escapeHTML(s._id)}">${escapeHTML(s.fullName)} (${escapeHTML(s.username).toUpperCase()}) - Grade ${escapeHTML(s.grade)}</option>`;
         });
       } catch (err) {
-        alert("Failed to connect to backend server.");
+        alert(err.message || "Failed to connect to backend server.");
       }
     }
 
@@ -452,12 +529,13 @@
       }
 
       results.forEach(item => {
+        const identifier = item._id || item.subject;
         tbody.innerHTML += `
           <tr>
-            <td>${item.subject}</td>
-            <td><strong>${item.score}/100</strong> (${item.grade})</td>
+            <td>${escapeHTML(item.subject)}</td>
+            <td><strong>${escapeHTML(item.score)}/100</strong> (${escapeHTML(item.grade || '-')})</td>
             <td>
-              <button class="btn-danger" onclick="deleteGradeApi('${item._id}')">Remove</button>
+              <button class="btn-danger" onclick="deleteGradeApi('${escapeHTML(identifier)}')">Remove</button>
             </td>
           </tr>
         `;
@@ -475,7 +553,7 @@
       try {
         const response = await fetch(`${API_BASE_URL}/students/${selectedStudent._id}/grades`, {
           method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
+          headers: getAuthHeaders(true),
           body: JSON.stringify({ subject, score })
         });
 
@@ -492,12 +570,13 @@
     }
 
     /* API - DELETE GRADE */
-    async function deleteGradeApi(subjectId) {
+    async function deleteGradeApi(subjectIdentifier) {
       if (!selectedStudent || !confirm("Are you sure you want to remove this grade?")) return;
 
       try {
-        const response = await fetch(`${API_BASE_URL}/students/${selectedStudent._id}/grades/${subjectId}`, {
-          method: 'DELETE'
+        const response = await fetch(`${API_BASE_URL}/students/${selectedStudent._id}/grades/${encodeURIComponent(subjectIdentifier)}`, {
+          method: 'DELETE',
+          headers: getAuthHeaders(false)
         });
 
         const data = await response.json();
@@ -510,31 +589,49 @@
       }
     }
 
-    /* API - REGISTER NEW STUDENT */
-    async function handleRegisterStudent() {
-      const username = prompt("Enter Student Username (e.g. tigist):");
-      if (!username) return;
+    /* MODAL CONTROLS */
+    function openRegisterModal() {
+      document.getElementById("registerError").classList.add("hidden");
+      document.getElementById("registerModal").classList.remove("hidden");
+    }
 
-      const fullName = prompt("Enter Full Name:", "Tigist Haile");
-      const password = prompt("Assign Password:", "1234");
-      const grade = prompt("Assign Grade Level:", "12");
+    function closeRegisterModal() {
+      document.getElementById("registerModal").classList.add("hidden");
+    }
+
+    /* API - REGISTER NEW STUDENT */
+    async function handleRegisterStudentSubmit(e) {
+      e.preventDefault();
+      const errorDiv = document.getElementById("registerError");
+      errorDiv.classList.add("hidden");
+
+      const username = document.getElementById("regUsername").value.trim();
+      const fullName = document.getElementById("regFullName").value.trim();
+      const password = document.getElementById("regPassword").value;
+      const grade = document.getElementById("regGrade").value.trim();
+      const section = document.getElementById("regSection").value.trim();
 
       try {
         const response = await fetch(`${API_BASE_URL}/students`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ username, fullName, password, grade, section: "A" })
+          headers: getAuthHeaders(true),
+          body: JSON.stringify({ username, fullName, password, grade, section })
         });
 
         const data = await response.json();
         if (!response.ok) throw new Error(data.message);
 
+        closeRegisterModal();
         alert("Student registered successfully!");
         await fetchAndRenderTeacherPortal();
-        document.getElementById("studentSelect").value = data.student._id;
-        loadStudentForEditing();
+        
+        if (data.student && data.student._id) {
+          document.getElementById("studentSelect").value = data.student._id;
+          loadStudentForEditing();
+        }
       } catch (err) {
-        alert("Error creating student: " + err.message);
+        errorDiv.textContent = err.message || "Error creating student";
+        errorDiv.classList.remove("hidden");
       }
     }
 
