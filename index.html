@@ -51,7 +51,7 @@
           <input type="text" id="studentFirstName" placeholder="e.g. Abebe" required class="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-transparent text-sm focus:ring-2 focus:ring-indigo-600 focus:outline-none">
         </div>
         <div>
-          <label class="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">Password</label>
+          <label class="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">Password / Code</label>
           <input type="password" id="studentPassword" placeholder="••••••••" required class="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-transparent text-sm focus:ring-2 focus:ring-indigo-600 focus:outline-none">
         </div>
         <div id="studentLoginError" class="text-red-500 text-xs font-medium hidden"></div>
@@ -130,7 +130,7 @@
       <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 sm:p-6 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h2 class="text-lg sm:text-xl font-bold">Teacher Administration Portal</h2>
-          <p class="text-xs text-slate-500 dark:text-slate-400">Students grouped by grade. Tap any row to manage details, codes, & photographs</p>
+          <p class="text-xs text-slate-500 dark:text-slate-400">View student codes, averages, photos, and manage records by grade & section</p>
         </div>
         <div class="flex flex-wrap gap-2 w-full md:w-auto">
           <button onclick="openModal('passwordModal')" class="flex-1 md:flex-none px-3 py-2 border border-slate-300 dark:border-slate-700 rounded-lg text-xs font-semibold hover:bg-slate-100 dark:hover:bg-slate-800 transition">🔒 Password</button>
@@ -143,7 +143,7 @@
       <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 sm:p-6 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4">
         <div>
           <h4 class="text-sm font-semibold">Bulk Import via CSV</h4>
-          <p class="text-xs text-slate-500 dark:text-slate-400">Format: Username, FullName, Password, Grade, PhotoURL(optional)</p>
+          <p class="text-xs text-slate-500 dark:text-slate-400">Format: Username, FullName, Password, Grade, Section, PhotoURL(optional)</p>
         </div>
         <input type="file" id="csvFileInput" accept=".csv" onchange="handleCSVUpload(event)" class="w-full sm:w-auto text-xs file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-600 dark:file:bg-slate-800 dark:file:text-indigo-400 hover:file:bg-indigo-100 cursor-pointer">
       </div>
@@ -190,39 +190,69 @@
         </form>
       </div>
 
-      <!-- Students Grouped by Grade Directory -->
+      <!-- Students Directory with Grade & Section Navigation Bars/Links -->
       <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 sm:p-6 shadow-sm space-y-6">
-        <div class="flex flex-col sm:flex-row justify-between items-center gap-4">
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
-            <h3 class="font-bold text-base">Students Directory (Grouped by Grade)</h3>
-            <p class="text-xs text-slate-500 dark:text-slate-400">View all credentials, passwords, averages, and student records</p>
+            <h3 class="font-bold text-base">Students Directory & Credentials</h3>
+            <p class="text-xs text-slate-500 dark:text-slate-400">Filter students by grade or section using the bars below</p>
           </div>
-          <input type="text" id="searchInput" placeholder="Search by name or username..." oninput="filterStudentsDirectory()" class="w-full sm:w-72 px-3 py-2 border border-slate-300 dark:border-slate-700 rounded-lg text-xs bg-transparent focus:ring-2 focus:ring-indigo-600 focus:outline-none">
+          <input type="text" id="searchInput" placeholder="Search by name or username..." oninput="filterStudentsDirectory()" class="w-full md:w-72 px-3 py-2 border border-slate-300 dark:border-slate-700 rounded-lg text-xs bg-transparent focus:ring-2 focus:ring-indigo-600 focus:outline-none">
+        </div>
+
+        <!-- Grade Filter Bar (Links / Pills) -->
+        <div class="space-y-2">
+          <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider">Filter by Grade:</label>
+          <div id="gradeFilterBar" class="flex flex-wrap gap-2">
+            <!-- Injected via JS -->
+          </div>
+        </div>
+
+        <!-- Section Filter Bar (Links / Pills) -->
+        <div class="space-y-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+          <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider">Filter by Section:</label>
+          <div id="sectionFilterBar" class="flex flex-wrap gap-2">
+            <!-- Injected via JS -->
+          </div>
         </div>
         
-        <!-- Grade Containers Injected Here -->
-        <div id="gradeGroupsContainer" class="space-y-6"></div>
+        <!-- Students Table Container -->
+        <div class="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800 mt-4">
+          <table class="w-full text-left border-collapse min-w-[750px]">
+            <thead>
+              <tr class="bg-slate-50 dark:bg-slate-800/50 text-slate-400 text-xs uppercase tracking-wider font-semibold border-b border-slate-200 dark:border-slate-800">
+                <th class="p-3.5">Student</th>
+                <th class="p-3.5">Password / Code</th>
+                <th class="p-3.5">Grade & Section</th>
+                <th class="p-3.5">Average & Status</th>
+                <th class="p-3.5">Subjects</th>
+                <th class="p-3.5 text-right">Action</th>
+              </tr>
+            </thead>
+            <tbody id="adminStudentsTableBody" class="divide-y divide-slate-200 dark:divide-slate-800 text-sm"></tbody>
+          </table>
+        </div>
       </div>
 
     </div>
 
   </main>
 
-  <!-- MODAL: FIRST TIME PASSWORD CHANGE -->
-  <div id="firstLoginModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden flex items-center justify-center p-4 z-50">
+  <!-- MODAL: FIRST TIME PASSWORD CHANGE (MANDATORY) -->
+  <div id="firstLoginModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm hidden flex items-center justify-center p-4 z-50">
     <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 w-full max-w-md shadow-2xl space-y-4">
       <div class="text-center space-y-1">
         <div class="inline-block p-3 bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 rounded-2xl text-2xl font-bold mb-1">🔐</div>
-        <h3 class="font-bold text-lg">Change Your Code / Password</h3>
-        <p class="text-xs text-slate-500 dark:text-slate-400">Since this is your first time logging in, please update your security code to proceed.</p>
+        <h3 class="font-bold text-lg">Change Your Password / Code Required</h3>
+        <p class="text-xs text-slate-500 dark:text-slate-400">For security reasons, you must change your initial temporary code before entering your student portal.</p>
       </div>
       <form onsubmit="handleFirstLoginPasswordChange(event)" class="space-y-4 pt-2">
         <div>
           <label class="block text-xs font-semibold text-slate-500 mb-1">New Password / Code</label>
-          <input type="password" id="firstLoginNewPassword" required minlength="4" placeholder="Enter new secure password" class="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-transparent text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600">
+          <input type="password" id="firstLoginNewPassword" required minlength="4" placeholder="Enter new secure code" class="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-transparent text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600">
         </div>
         <div id="firstLoginError" class="text-red-500 text-xs font-medium hidden"></div>
-        <button type="submit" class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg text-sm shadow transition">Update Password & Continue</button>
+        <button type="submit" class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg text-sm shadow transition">Update Code & Enter Portal</button>
       </form>
     </div>
   </div>
@@ -283,6 +313,9 @@
     let studentsCache = [];
     let selectedStudent = null;
     let loggedInStudent = null;
+
+    let activeGradeFilter = 'ALL';
+    let activeSectionFilter = 'ALL';
 
     document.getElementById("year").textContent = new Date().getFullYear();
 
@@ -360,8 +393,8 @@
         currentAuthToken = data.token;
         loggedInStudent = data.student;
 
-        // Check if first-time login requires password change
-        if (loggedInStudent.isFirstLogin || loggedInStudent.mustChangePassword) {
+        // Strictly enforce mandatory first-time password change if flagged
+        if (loggedInStudent.isFirstLogin === true || loggedInStudent.mustChangePassword === true) {
           openModal('firstLoginModal');
         } else {
           renderStudentDashboard(loggedInStudent);
@@ -378,7 +411,7 @@
       const newPassword = document.getElementById("firstLoginNewPassword").value;
       const errorDiv = document.getElementById("firstLoginError");
       try {
-        const response = await fetch(`${API_BASE_URL}/students/${loggedInStudent._id}`, {
+        await fetch(`${API_BASE_URL}/students/${loggedInStudent._id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ password: newPassword, isFirstLogin: false, mustChangePassword: false })
@@ -469,100 +502,108 @@
       try {
         const response = await fetch(`${API_BASE_URL}/students`);
         studentsCache = await response.json();
-        renderAdminStudentsByGrade(studentsCache);
+        buildFilterBars(studentsCache);
+        renderFilteredStudentsDirectory();
       } catch (err) { alert("Failed to fetch students."); }
     }
 
-    /* GROUP AND RENDER STUDENTS BY GRADE WITH PASSWORD VISIBLE */
-    function renderAdminStudentsByGrade(students) {
-      const container = document.getElementById("gradeGroupsContainer");
-      container.innerHTML = "";
+    /* BUILD GRADE & SECTION FILTER BARS / LINKS */
+    function buildFilterBars(students) {
+      const gradesSet = new Set();
+      const sectionsSet = new Set();
+
+      students.forEach(s => {
+        if (s.grade) gradesSet.add(String(s.grade));
+        if (s.section) sectionsSet.add(String(s.section).toUpperCase());
+      });
+
+      const sortedGrades = Array.from(gradesSet).sort();
+      const sortedSections = Array.from(sectionsSet).sort();
+
+      // Grade Bar
+      const gradeBar = document.getElementById("gradeFilterBar");
+      let gradeHTML = `<button onclick="setGradeFilter('ALL')" class="px-3 py-1.5 rounded-lg text-xs font-semibold transition ${activeGradeFilter === 'ALL' ? 'bg-indigo-600 text-white shadow' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200'}">All Grades</button>`;
+      sortedGrades.forEach(g => {
+        const isActive = activeGradeFilter === g;
+        gradeHTML += `<button onclick="setGradeFilter('${g}')" class="px-3 py-1.5 rounded-lg text-xs font-semibold transition ${isActive ? 'bg-indigo-600 text-white shadow' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200'}">Grade ${g}</button>`;
+      });
+      gradeBar.innerHTML = gradeHTML;
+
+      // Section Bar
+      const sectionBar = document.getElementById("sectionFilterBar");
+      let sectionHTML = `<button onclick="setSectionFilter('ALL')" class="px-3 py-1.5 rounded-lg text-xs font-semibold transition ${activeSectionFilter === 'ALL' ? 'bg-indigo-600 text-white shadow' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200'}">All Sections</button>`;
+      sortedSections.forEach(sec => {
+        const isActive = activeSectionFilter === sec;
+        sectionHTML += `<button onclick="setSectionFilter('${sec}')" class="px-3 py-1.5 rounded-lg text-xs font-semibold transition ${isActive ? 'bg-indigo-600 text-white shadow' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200'}">Section ${sec}</button>`;
+      });
+      sectionBar.innerHTML = sectionHTML;
+    }
+
+    function setGradeFilter(grade) {
+      activeGradeFilter = grade;
+      buildFilterBars(studentsCache);
+      renderFilteredStudentsDirectory();
+    }
+
+    function setSectionFilter(section) {
+      activeSectionFilter = section;
+      buildFilterBars(studentsCache);
+      renderFilteredStudentsDirectory();
+    }
+
+    /* RENDER STUDENTS DIRECTORY WITH VISIBLE PASSWORDS & FILTERS */
+    function renderFilteredStudentsDirectory() {
+      const term = document.getElementById("searchInput").value.toLowerCase();
+      const tbody = document.getElementById("adminStudentsTableBody");
       
-      if (!students || students.length === 0) {
-        container.innerHTML = `<div class="p-6 text-center text-slate-400">No students found.</div>`;
+      const filtered = studentsCache.filter(s => {
+        const matchText = s.fullName.toLowerCase().includes(term) || s.username.toLowerCase().includes(term);
+        const matchGrade = activeGradeFilter === 'ALL' || String(s.grade) === String(activeGradeFilter);
+        const matchSection = activeSectionFilter === 'ALL' || String(s.section || 'A').toUpperCase() === String(activeSectionFilter);
+        return matchText && matchGrade && matchSection;
+      });
+
+      tbody.innerHTML = "";
+      if (!filtered || filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" class="p-6 text-center text-slate-400">No students match the current filters.</td></tr>`;
         return;
       }
 
-      // Group students by grade
-      const grouped = {};
-      students.forEach(s => {
-        const gradeKey = s.grade ? `Grade ${s.grade}` : 'Unassigned Grade';
-        if (!grouped[gradeKey]) grouped[gradeKey] = [];
-        grouped[gradeKey].push(s);
-      });
-
-      // Sort grades keys naturally
-      const sortedGradeKeys = Object.keys(grouped).sort();
-
-      sortedGradeKeys.forEach(gradeKey => {
-        const gradeStudents = grouped[gradeKey];
+      filtered.forEach(s => {
+        const studentGrades = s.results || s.grades || [];
+        const resultsCount = studentGrades.length;
+        const stats = calculateStats(studentGrades);
+        const isSelected = selectedStudent && selectedStudent._id === s._id;
+        const studentPassword = s.password || s.code || 'N/A';
         
-        let sectionHTML = `
-          <div class="border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden shadow-xs mb-6">
-            <div class="bg-slate-100 dark:bg-slate-800/80 px-4 py-3 flex justify-between items-center border-b border-slate-200 dark:border-slate-700">
-              <h4 class="font-bold text-sm sm:text-base text-indigo-600 dark:text-indigo-400 flex items-center gap-2">
-                📚 ${gradeKey}
-              </h4>
-              <span class="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300">${gradeStudents.length} Students</span>
-            </div>
-            <div class="overflow-x-auto">
-              <table class="w-full text-left border-collapse min-w-[700px]">
-                <thead>
-                  <tr class="bg-slate-50 dark:bg-slate-900/50 text-slate-400 text-xs uppercase tracking-wider font-semibold border-b border-slate-200 dark:border-slate-800">
-                    <th class="p-3.5">Student</th>
-                    <th class="p-3.5">Password / Code</th>
-                    <th class="p-3.5">Section</th>
-                    <th class="p-3.5">Average & Status</th>
-                    <th class="p-3.5">Subjects</th>
-                    <th class="p-3.5 text-right">Action</th>
-                  </tr>
-                </thead>
-                <tbody class="divide-y divide-slate-200 dark:divide-slate-800 text-sm">`;
-
-        gradeStudents.forEach(s => {
-          const studentGrades = s.results || s.grades || [];
-          const resultsCount = studentGrades.length;
-          const stats = calculateStats(studentGrades);
-          const isSelected = selectedStudent && selectedStudent._id === s._id;
-          const passwordValue = s.password || s.code || '••••••';
-          
-          sectionHTML += `<tr onclick="selectStudentForEditing('${s._id}')" class="cursor-pointer transition-all duration-150 ${isSelected ? 'bg-indigo-50/80 dark:bg-indigo-950/40 border-l-4 border-indigo-600' : 'hover:bg-indigo-50/50 dark:hover:bg-slate-800/60'}">
-              <td class="p-3.5">
-                <div class="flex items-center gap-3">
-                  ${getAvatarHTML(s, "w-10 h-10")}
-                  <div>
-                    <div class="font-bold text-slate-900 dark:text-white">${s.fullName}</div>
-                    <div class="text-xs text-indigo-600 dark:text-indigo-400 font-mono">@${s.username}</div>
-                  </div>
+        tbody.innerHTML += `<tr onclick="selectStudentForEditing('${s._id}')" class="cursor-pointer transition-all duration-150 ${isSelected ? 'bg-indigo-50/80 dark:bg-indigo-950/40 border-l-4 border-indigo-600' : 'hover:bg-indigo-50/50 dark:hover:bg-slate-800/60'}">
+            <td class="p-3.5">
+              <div class="flex items-center gap-3">
+                ${getAvatarHTML(s, "w-10 h-10")}
+                <div>
+                  <div class="font-bold text-slate-900 dark:text-white">${s.fullName}</div>
+                  <div class="text-xs text-indigo-600 dark:text-indigo-400 font-mono">@${s.username}</div>
                 </div>
-              </td>
-              <td class="p-3.5 font-mono text-xs text-slate-600 dark:text-slate-300 font-semibold bg-slate-50 dark:bg-slate-800/40 px-2 rounded">${passwordValue}</td>
-              <td class="p-3.5 text-xs font-medium text-slate-600 dark:text-slate-300">${s.section || 'A'}</td>
-              <td class="p-3.5">
-                <div class="flex items-center gap-2">
-                  <span class="font-bold text-slate-900 dark:text-white text-xs">${resultsCount > 0 ? stats.avg + '%' : '--'}</span>
-                  <span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${resultsCount === 0 ? 'bg-slate-100 text-slate-500' : stats.pass ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'}">${resultsCount === 0 ? 'NO DATA' : stats.status}</span>
-                </div>
-              </td>
-              <td class="p-3.5"><span class="px-2.5 py-1 rounded-full bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 text-xs font-bold">${resultsCount} subjects</span></td>
-              <td class="p-3.5 text-right">
-                <span class="text-xs font-semibold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/80 px-2.5 py-1.5 rounded-lg inline-block shadow-xs">Manage &rarr;</span>
-              </td>
-            </tr>`;
-        });
-
-        sectionHTML += `</tbody></table></div></div>`;
-        container.innerHTML += sectionHTML;
+              </div>
+            </td>
+            <td class="p-3.5 font-mono text-xs text-slate-700 dark:text-slate-300 font-semibold bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded inline-block mt-2">${studentPassword}</td>
+            <td class="p-3.5 text-xs font-medium text-slate-600 dark:text-slate-300">Grade ${s.grade || '-'} - ${s.section || 'A'}</td>
+            <td class="p-3.5">
+              <div class="flex items-center gap-2">
+                <span class="font-bold text-slate-900 dark:text-white text-xs">${resultsCount > 0 ? stats.avg + '%' : '--'}</span>
+                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${resultsCount === 0 ? 'bg-slate-100 text-slate-500' : stats.pass ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'}">${resultsCount === 0 ? 'NO DATA' : stats.status}</span>
+              </div>
+            </td>
+            <td class="p-3.5"><span class="px-2.5 py-1 rounded-full bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 text-xs font-bold">${resultsCount} subjects</span></td>
+            <td class="p-3.5 text-right">
+              <span class="text-xs font-semibold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/80 px-2.5 py-1.5 rounded-lg inline-block shadow-xs">Manage &rarr;</span>
+            </td>
+          </tr>`;
       });
     }
 
     function filterStudentsDirectory() {
-      const term = document.getElementById("searchInput").value.toLowerCase();
-      const filtered = studentsCache.filter(s => 
-        s.fullName.toLowerCase().includes(term) || 
-        s.username.toLowerCase().includes(term)
-      );
-      renderAdminStudentsByGrade(filtered);
+      renderFilteredStudentsDirectory();
     }
 
     function selectStudentForEditing(id) {
@@ -576,14 +617,14 @@
       document.getElementById("editPhotoUrlInput").value = selectedStudent.photo || selectedStudent.photoUrl || "";
       
       renderAdminGradesTable(selectedStudent.results || selectedStudent.grades || []);
-      renderAdminStudentsByGrade(studentsCache);
+      renderFilteredStudentsDirectory();
       editor.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
 
     function closeEditor() {
       document.getElementById("editorSection").classList.add("hidden");
       selectedStudent = null;
-      renderAdminStudentsByGrade(studentsCache);
+      renderFilteredStudentsDirectory();
     }
 
     /* API - UPDATE STUDENT PHOTO */
@@ -591,7 +632,7 @@
       if (!selectedStudent) return;
       const newPhoto = document.getElementById("editPhotoUrlInput").value.trim();
       try {
-        const response = await fetch(`${API_BASE_URL}/students/${selectedStudent._id}`, {
+        await fetch(`${API_BASE_URL}/students/${selectedStudent._id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ photo: newPhoto })
@@ -600,12 +641,12 @@
         document.getElementById("editorAvatarPreview").innerHTML = getAvatarHTML(selectedStudent, "w-12 h-12");
         const idx = studentsCache.findIndex(s => s._id === selectedStudent._id);
         if(idx !== -1) studentsCache[idx].photo = newPhoto;
-        renderAdminStudentsByGrade(studentsCache);
+        renderFilteredStudentsDirectory();
         alert("Photograph updated successfully!");
       } catch (err) {
         selectedStudent.photo = newPhoto;
         alert("Photo updated locally!");
-        renderAdminStudentsByGrade(studentsCache);
+        renderFilteredStudentsDirectory();
       }
     }
 
@@ -647,7 +688,7 @@
         renderAdminGradesTable(updatedGrades);
         const idx = studentsCache.findIndex(s => s._id === selectedStudent._id);
         if(idx !== -1) studentsCache[idx].results = updatedGrades;
-        renderAdminStudentsByGrade(studentsCache);
+        renderFilteredStudentsDirectory();
         document.getElementById("newSubjectName").value = "";
         document.getElementById("newSubjectScore").value = "";
       } catch (err) { alert("Save failed: " + err.message); }
@@ -664,7 +705,7 @@
         renderAdminGradesTable(updatedGrades);
         const idx = studentsCache.findIndex(s => s._id === selectedStudent._id);
         if(idx !== -1) studentsCache[idx].results = updatedGrades;
-        renderAdminStudentsByGrade(studentsCache);
+        renderFilteredStudentsDirectory();
       } catch (err) { alert("Delete failed: " + err.message); }
     }
 
@@ -675,13 +716,14 @@
       const fullName = prompt("Full Name:", "Abebe Kebede");
       const password = prompt("Password / Code:", "password123");
       const grade = prompt("Grade:", "11");
+      const section = prompt("Section:", "A");
       const photo = prompt("Photograph URL (Optional):", "");
 
       try {
         const response = await fetch(`${API_BASE_URL}/students`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ username, fullName, password, grade, section: "A", photo, isFirstLogin: true })
+          body: JSON.stringify({ username, fullName, password, grade, section, photo, isFirstLogin: true })
         });
         if (!response.ok) throw new Error("Failed to create student");
         alert("Student registered successfully with first-time login security flag!");
@@ -704,12 +746,13 @@
             const fullName = row[1].trim();
             const password = row[2].trim();
             const grade = row[3] ? row[3].trim() : "11";
-            const photo = row[4] ? row[4].trim() : "";
+            const section = row[4] ? row[4].trim() : "A";
+            const photo = row[5] ? row[5].trim() : "";
             if (username && password) {
               await fetch(`${API_BASE_URL}/students`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username, fullName, password, grade, section: "A", photo, isFirstLogin: true })
+                body: JSON.stringify({ username, fullName, password, grade, section, photo, isFirstLogin: true })
               });
               count++;
             }
