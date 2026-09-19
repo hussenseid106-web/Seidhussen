@@ -75,6 +75,8 @@
 
     <!-- STUDENT DASHBOARD -->
     <div id="studentDashboardCard" class="hidden bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 sm:p-8 shadow-sm space-y-6">
+      
+      <!-- Dashboard Top Header Bar -->
       <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-slate-200 dark:border-slate-800 pb-6 gap-6">
         <div class="flex items-center gap-4">
           <div id="studentAvatarContainer" class="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl overflow-hidden bg-indigo-100 dark:bg-indigo-950 flex items-center justify-center border-2 border-indigo-500/30 flex-shrink-0 shadow-sm">
@@ -85,42 +87,77 @@
             <p id="studentMeta" class="text-xs text-slate-500 dark:text-slate-400 mt-1">Grade -- | Section --</p>
           </div>
         </div>
-        <button onclick="window.print()" class="px-4 py-2 border border-slate-300 dark:border-slate-700 rounded-lg text-xs font-semibold hover:bg-slate-100 dark:hover:bg-slate-800 transition flex items-center gap-2">🖨️ Print Report</button>
+        <div class="flex flex-wrap items-center gap-2">
+          <button onclick="toggleStudentSettings()" id="studentSettingsToggleBtn" class="px-3.5 py-2 border border-slate-300 dark:border-slate-700 rounded-lg text-xs font-semibold hover:bg-slate-100 dark:hover:bg-slate-800 transition flex items-center gap-2 shadow-xs">⚙️ Profile Settings</button>
+          <button onclick="window.print()" class="px-3.5 py-2 border border-slate-300 dark:border-slate-700 rounded-lg text-xs font-semibold hover:bg-slate-100 dark:hover:bg-slate-800 transition flex items-center gap-2 shadow-xs">🖨️ Print Report</button>
+        </div>
       </div>
 
-      <!-- Performance Summary Cards -->
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div class="bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl p-4 flex items-center justify-between">
-          <div>
-            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Overall Average Score</p>
-            <h3 id="studentAvgDisplay" class="text-2xl font-black text-indigo-600 dark:text-indigo-400 mt-1">0.0%</h3>
-          </div>
-          <div class="p-3 bg-indigo-50 dark:bg-indigo-950/60 rounded-xl text-indigo-600 dark:text-indigo-400 text-xl font-bold">📊</div>
-        </div>
-        <div class="bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl p-4 flex items-center justify-between">
-          <div>
-            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Overall Academic Status (Pass ≥ 50%)</p>
-            <div id="studentStatusBadge" class="mt-1">
-              <span class="px-3 py-1 rounded-full text-xs font-bold bg-slate-200 text-slate-700">Evaluating...</span>
+      <!-- STUDENT RESULTS VIEW -->
+      <div id="studentResultsView" class="space-y-6">
+        <!-- Performance Summary Cards -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div class="bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl p-4 flex items-center justify-between">
+            <div>
+              <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Overall Average Score</p>
+              <h3 id="studentAvgDisplay" class="text-2xl font-black text-indigo-600 dark:text-indigo-400 mt-1">0.0%</h3>
             </div>
+            <div class="p-3 bg-indigo-50 dark:bg-indigo-950/60 rounded-xl text-indigo-600 dark:text-indigo-400 text-xl font-bold">📊</div>
           </div>
-          <div class="p-3 bg-slate-200/50 dark:bg-slate-700/50 rounded-xl text-xl">🎓</div>
+          <div class="bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl p-4 flex items-center justify-between">
+            <div>
+              <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Overall Academic Status (Pass ≥ 50%)</p>
+              <div id="studentStatusBadge" class="mt-1">
+                <span class="px-3 py-1 rounded-full text-xs font-bold bg-slate-200 text-slate-700">Evaluating...</span>
+              </div>
+            </div>
+            <div class="p-3 bg-slate-200/50 dark:bg-slate-700/50 rounded-xl text-xl">🎓</div>
+          </div>
+        </div>
+
+        <div class="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800">
+          <table class="w-full text-left border-collapse min-w-[400px]">
+            <thead>
+              <tr class="bg-slate-50 dark:bg-slate-800/50 text-slate-400 text-xs uppercase tracking-wider font-semibold">
+                <th class="p-3 sm:p-4">Subject</th>
+                <th class="p-3 sm:p-4">Score</th>
+                <th class="p-3 sm:p-4">Grade</th>
+                <th class="p-3 sm:p-4">Status</th>
+              </tr>
+            </thead>
+            <tbody id="studentResultsBody" class="divide-y divide-slate-200 dark:divide-slate-800 text-sm"></tbody>
+          </table>
         </div>
       </div>
 
-      <div class="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800">
-        <table class="w-full text-left border-collapse min-w-[400px]">
-          <thead>
-            <tr class="bg-slate-50 dark:bg-slate-800/50 text-slate-400 text-xs uppercase tracking-wider font-semibold">
-              <th class="p-3 sm:p-4">Subject</th>
-              <th class="p-3 sm:p-4">Score</th>
-              <th class="p-3 sm:p-4">Grade</th>
-              <th class="p-3 sm:p-4">Status</th>
-            </tr>
-          </thead>
-          <tbody id="studentResultsBody" class="divide-y divide-slate-200 dark:divide-slate-800 text-sm"></tbody>
-        </table>
+      <!-- STUDENT SETTINGS / PROFILE MODIFICATION VIEW -->
+      <div id="studentSettingsView" class="hidden space-y-6">
+        <div class="flex justify-between items-center bg-slate-50 dark:bg-slate-800/40 p-4 rounded-xl border border-slate-200 dark:border-slate-700">
+          <div>
+            <h3 class="font-bold text-base">Edit Student Profile & Security</h3>
+            <p class="text-xs text-slate-500 dark:text-slate-400">Update your name, profile photo URL, or password securely</p>
+          </div>
+          <button onclick="toggleStudentSettings()" class="px-3 py-1.5 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 rounded-lg text-xs font-semibold transition">✕ Back to Results</button>
+        </div>
+
+        <form onsubmit="handleStudentProfileUpdate(event)" class="space-y-4 max-w-xl mx-auto bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl p-6">
+          <div>
+            <label class="block text-xs font-semibold text-slate-500 mb-1">Full Name</label>
+            <input type="text" id="studentEditFullName" required class="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm focus:ring-2 focus:ring-indigo-600 focus:outline-none">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-500 mb-1">Photograph URL</label>
+            <input type="url" id="studentEditPhotoUrl" placeholder="https://example.com/photo.jpg" class="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm focus:ring-2 focus:ring-indigo-600 focus:outline-none">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-500 mb-1">New Password / Code <span class="text-slate-400 font-normal">(Leave blank to keep current)</span></label>
+            <input type="password" id="studentEditPassword" placeholder="••••••••" minlength="4" class="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm focus:ring-2 focus:ring-indigo-600 focus:outline-none">
+          </div>
+          <div id="studentSettingsMsg" class="text-xs font-medium"></div>
+          <button type="submit" class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg text-sm shadow transition">Save Profile Changes</button>
+        </form>
       </div>
+
     </div>
 
     <!-- TEACHER / ADMIN DASHBOARD -->
@@ -200,20 +237,16 @@
           <input type="text" id="searchInput" placeholder="Search by name or username..." oninput="filterStudentsDirectory()" class="w-full md:w-72 px-3 py-2 border border-slate-300 dark:border-slate-700 rounded-lg text-xs bg-transparent focus:ring-2 focus:ring-indigo-600 focus:outline-none">
         </div>
 
-        <!-- Grade Filter Bar (Links / Pills) -->
+        <!-- Grade Filter Bar -->
         <div class="space-y-2">
           <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider">Filter by Grade:</label>
-          <div id="gradeFilterBar" class="flex flex-wrap gap-2">
-            <!-- Injected via JS -->
-          </div>
+          <div id="gradeFilterBar" class="flex flex-wrap gap-2"></div>
         </div>
 
-        <!-- Section Filter Bar (Links / Pills) -->
+        <!-- Section Filter Bar -->
         <div class="space-y-2 pt-2 border-t border-slate-100 dark:border-slate-800">
           <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider">Filter by Section:</label>
-          <div id="sectionFilterBar" class="flex flex-wrap gap-2">
-            <!-- Injected via JS -->
-          </div>
+          <div id="sectionFilterBar" class="flex flex-wrap gap-2"></div>
         </div>
         
         <!-- Students Table Container -->
@@ -238,21 +271,21 @@
 
   </main>
 
-  <!-- MODAL: FIRST TIME PASSWORD CHANGE (MANDATORY) -->
-  <div id="firstLoginModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm hidden flex items-center justify-center p-4 z-50">
+  <!-- MODAL: FIRST TIME PASSWORD CHANGE (MANDATORY & UNCLOSEABLE) -->
+  <div id="firstLoginModal" class="fixed inset-0 bg-black/75 backdrop-blur-md hidden flex items-center justify-center p-4 z-50">
     <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 w-full max-w-md shadow-2xl space-y-4">
       <div class="text-center space-y-1">
         <div class="inline-block p-3 bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 rounded-2xl text-2xl font-bold mb-1">🔐</div>
-        <h3 class="font-bold text-lg">Change Your Password / Code Required</h3>
-        <p class="text-xs text-slate-500 dark:text-slate-400">For security reasons, you must change your initial temporary code before entering your student portal.</p>
+        <h3 class="font-bold text-lg">Change Your Temporary Code</h3>
+        <p class="text-xs text-slate-500 dark:text-slate-400">For security, you must update your temporary password before accessing your student portal.</p>
       </div>
       <form onsubmit="handleFirstLoginPasswordChange(event)" class="space-y-4 pt-2">
         <div>
-          <label class="block text-xs font-semibold text-slate-500 mb-1">New Password / Code</label>
-          <input type="password" id="firstLoginNewPassword" required minlength="4" placeholder="Enter new secure code" class="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-transparent text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600">
+          <label class="block text-xs font-semibold text-slate-500 mb-1">New Secure Password</label>
+          <input type="password" id="firstLoginNewPassword" required minlength="4" placeholder="Enter new password" class="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-transparent text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600">
         </div>
         <div id="firstLoginError" class="text-red-500 text-xs font-medium hidden"></div>
-        <button type="submit" class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg text-sm shadow transition">Update Code & Enter Portal</button>
+        <button type="submit" class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg text-sm shadow transition">Update Password & Enter Portal</button>
       </form>
     </div>
   </div>
@@ -374,7 +407,7 @@
       }
     }
 
-    /* API - STUDENT LOGIN */
+    /* API - STUDENT LOGIN & MANDATORY FIRST LOGIN CHECK */
     async function handleStudentLogin(e) {
       e.preventDefault();
       const btn = document.getElementById("studentLoginBtn");
@@ -393,7 +426,7 @@
         currentAuthToken = data.token;
         loggedInStudent = data.student;
 
-        // Strictly enforce mandatory first-time password change if flagged
+        // STRICT MANDATORY CHECK
         if (loggedInStudent.isFirstLogin === true || loggedInStudent.mustChangePassword === true) {
           openModal('firstLoginModal');
         } else {
@@ -424,6 +457,70 @@
       } catch (err) {
         errorDiv.textContent = "Failed to update code: " + err.message;
         errorDiv.classList.remove("hidden");
+      }
+    }
+
+    /* STUDENT PROFILE SETTINGS TOGGLE & UPDATE */
+    function toggleStudentSettings() {
+      const resultsView = document.getElementById("studentResultsView");
+      const settingsView = document.getElementById("studentSettingsView");
+      const isSettingsOpen = !settingsView.classList.contains("hidden");
+
+      if (isSettingsOpen) {
+        settingsView.classList.add("hidden");
+        resultsView.classList.remove("hidden");
+        document.getElementById("studentSettingsToggleBtn").textContent = "⚙️ Profile Settings";
+      } else {
+        resultsView.classList.add("hidden");
+        settingsView.classList.remove("hidden");
+        document.getElementById("studentSettingsToggleBtn").textContent = "📊 View Results";
+        
+        document.getElementById("studentEditFullName").value = loggedInStudent.fullName || "";
+        document.getElementById("studentEditPhotoUrl").value = loggedInStudent.photo || loggedInStudent.photoUrl || "";
+        document.getElementById("studentEditPassword").value = "";
+        document.getElementById("studentSettingsMsg").textContent = "";
+      }
+    }
+
+    async function handleStudentProfileUpdate(e) {
+      e.preventDefault();
+      const newFullName = document.getElementById("studentEditFullName").value.trim();
+      const newPhoto = document.getElementById("studentEditPhotoUrl").value.trim();
+      const newPassword = document.getElementById("studentEditPassword").value;
+      const msgDiv = document.getElementById("studentSettingsMsg");
+
+      const updatePayload = {
+        fullName: newFullName,
+        photo: newPhoto
+      };
+      if (newPassword && newPassword.length >= 4) {
+        updatePayload.password = newPassword;
+      }
+
+      try {
+        const response = await fetch(`${API_BASE_URL}/students/${loggedInStudent._id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(updatePayload)
+        });
+        if (!response.ok) throw new Error("Failed to update profile");
+        
+        loggedInStudent.fullName = newFullName;
+        loggedInStudent.photo = newPhoto;
+        if (newPassword) loggedInStudent.password = newPassword;
+
+        msgDiv.className = "text-emerald-500 font-semibold";
+        msgDiv.textContent = "Profile updated successfully!";
+        
+        document.getElementById("studentNameDisplay").textContent = loggedInStudent.fullName;
+        document.getElementById("studentAvatarContainer").innerHTML = getAvatarHTML(loggedInStudent, "w-16 h-16 sm:w-20 sm:h-20");
+
+        setTimeout(() => {
+          toggleStudentSettings();
+        }, 1200);
+      } catch (err) {
+        msgDiv.className = "text-red-500 font-semibold";
+        msgDiv.textContent = "Error: " + err.message;
       }
     }
 
@@ -507,7 +604,7 @@
       } catch (err) { alert("Failed to fetch students."); }
     }
 
-    /* BUILD GRADE & SECTION FILTER BARS / LINKS */
+    /* BUILD GRADE & SECTION FILTER BARS */
     function buildFilterBars(students) {
       const gradesSet = new Set();
       const sectionsSet = new Set();
@@ -520,7 +617,6 @@
       const sortedGrades = Array.from(gradesSet).sort();
       const sortedSections = Array.from(sectionsSet).sort();
 
-      // Grade Bar
       const gradeBar = document.getElementById("gradeFilterBar");
       let gradeHTML = `<button onclick="setGradeFilter('ALL')" class="px-3 py-1.5 rounded-lg text-xs font-semibold transition ${activeGradeFilter === 'ALL' ? 'bg-indigo-600 text-white shadow' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200'}">All Grades</button>`;
       sortedGrades.forEach(g => {
@@ -529,7 +625,6 @@
       });
       gradeBar.innerHTML = gradeHTML;
 
-      // Section Bar
       const sectionBar = document.getElementById("sectionFilterBar");
       let sectionHTML = `<button onclick="setSectionFilter('ALL')" class="px-3 py-1.5 rounded-lg text-xs font-semibold transition ${activeSectionFilter === 'ALL' ? 'bg-indigo-600 text-white shadow' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200'}">All Sections</button>`;
       sortedSections.forEach(sec => {
@@ -551,7 +646,7 @@
       renderFilteredStudentsDirectory();
     }
 
-    /* RENDER STUDENTS DIRECTORY WITH VISIBLE PASSWORDS & FILTERS */
+    /* RENDER STUDENTS DIRECTORY */
     function renderFilteredStudentsDirectory() {
       const term = document.getElementById("searchInput").value.toLowerCase();
       const tbody = document.getElementById("adminStudentsTableBody");
@@ -709,7 +804,7 @@
       } catch (err) { alert("Delete failed: " + err.message); }
     }
 
-    /* API - ADD SINGLE STUDENT */
+    /* API - ADD SINGLE STUDENT WITH `isFirstLogin: true` */
     async function handleRegisterStudent() {
       const username = prompt("Username (e.g. abebe):");
       if (!username) return;
@@ -726,12 +821,12 @@
           body: JSON.stringify({ username, fullName, password, grade, section, photo, isFirstLogin: true })
         });
         if (!response.ok) throw new Error("Failed to create student");
-        alert("Student registered successfully with first-time login security flag!");
+        alert("Student registered successfully! They will be forced to change their password on first login.");
         await fetchAndRenderTeacherPortal();
       } catch (err) { alert(err.message); }
     }
 
-    /* CSV BULK UPLOAD */
+    /* CSV BULK UPLOAD WITH `isFirstLogin: true` */
     function handleCSVUpload(e) {
       const file = e.target.files[0];
       if (!file) return;
@@ -758,7 +853,7 @@
             }
           }
         }
-        alert(`Successfully imported ${count} students with first-time login security flags!`);
+        alert(`Successfully imported ${count} students with mandatory password change enabled!`);
         e.target.value = ""; 
         await fetchAndRenderTeacherPortal();
       };
@@ -810,6 +905,8 @@
       document.getElementById("studentDashboardCard").classList.add("hidden");
       document.getElementById("teacherDashboardCard").classList.add("hidden");
       document.getElementById("editorSection").classList.add("hidden");
+      document.getElementById("studentSettingsView").classList.add("hidden");
+      document.getElementById("studentResultsView").classList.remove("hidden");
       document.getElementById("loginCard").classList.remove("hidden");
       document.getElementById("logoutBtn").classList.add("hidden");
       closeModal('firstLoginModal');
