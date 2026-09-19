@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Harbu Secondary School - Advanced Portal</title>
-  <link href="[https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap](https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap)" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
     :root {
       --primary: #2563eb;
@@ -110,7 +110,6 @@
 
     .hidden { display: none !important; }
 
-    /* Tabs */
     .role-tabs {
       display: flex;
       gap: 0.5rem;
@@ -130,7 +129,6 @@
 
     .tab-btn.active { background-color: var(--primary); color: white; }
 
-    /* Forms */
     .form-group { margin-bottom: 1.25rem; }
     label { display: block; margin-bottom: 0.5rem; font-size: 0.875rem; font-weight: 600; color: var(--text-muted); }
     input, select {
@@ -149,7 +147,6 @@
     .error-msg { color: var(--danger); font-size: 0.875rem; margin-top: 0.5rem; font-weight: 500; }
     .success-msg { color: var(--accent); font-size: 0.875rem; margin-top: 0.5rem; font-weight: 500; }
 
-    /* Tables */
     .table-container { overflow-x: auto; margin-top: 1rem; border-radius: 0.5rem; border: 1px solid var(--border); }
     table { width: 100%; border-collapse: collapse; text-align: left; }
     th, td { padding: 0.85rem 1.2rem; border-bottom: 1px solid var(--border); font-size: 0.9rem; }
@@ -162,7 +159,6 @@
     .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
     .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
 
-    /* Modals */
     .modal-overlay {
       position: fixed; top:0; left:0; right:0; bottom:0;
       background: rgba(0,0,0,0.5);
@@ -265,7 +261,6 @@
         </div>
       </div>
 
-      <!-- Action Bar -->
       <div style="background: var(--bg); padding: 1.25rem; border-radius: 0.5rem; border: 1px solid var(--border); margin-bottom: 1.5rem;">
         <div class="grid-3" style="align-items: flex-end;">
           <div style="grid-column: span 2;">
@@ -279,14 +274,12 @@
           </div>
         </div>
         
-        <!-- Bulk CSV Upload -->
         <div style="margin-top: 1rem; border-top: 1px dashed var(--border); padding-top: 1rem;">
           <label>📁 Bulk Upload Students (CSV: Username, FullName, Password, Grade)</label>
           <input type="file" id="csvFileInput" accept=".csv" onchange="handleCSVUpload(event)">
         </div>
       </div>
 
-      <!-- Grade Editor Section -->
       <div id="editorSection" class="hidden" style="margin-top: 2rem; border-top: 1px solid var(--border); padding-top: 1.5rem;">
         <h3 id="selectedStudentTitle">Editing Grades</h3>
         
@@ -310,7 +303,7 @@
 
   </div>
 
-  <!-- MODAL: CHANGE ADMIN PASSWORD -->
+  <!-- MODALS -->
   <div id="passwordModal" class="modal-overlay hidden">
     <div class="modal">
       <h3>Change Admin Password</h3>
@@ -332,11 +325,9 @@
     </div>
   </div>
 
-  <!-- MODAL: ADD NEW TEACHER -->
   <div id="teacherModal" class="modal-overlay hidden">
     <div class="modal">
       <h3>Register Co-Teacher</h3>
-      <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1rem;">Grant dashboard access to another staff member.</p>
       <form onsubmit="handleRegisterTeacher(event)">
         <div class="form-group">
           <label>Teacher Username</label>
@@ -360,7 +351,7 @@
   </footer>
 
   <script>
-    const API_BASE_URL = "[https://school-result-backend.onrender.com/api](https://school-result-backend.onrender.com/api)";
+    const API_BASE_URL = "https://school-result-backend.onrender.com/api";
 
     let activeRole = 'student';
     let currentAuthToken = null;
@@ -386,7 +377,6 @@
     function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
     function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
 
-    /* API - STUDENT LOGIN */
     async function handleStudentLogin(e) {
       e.preventDefault();
       const btn = document.getElementById("studentLoginBtn");
@@ -411,7 +401,6 @@
       } finally { btn.disabled = false; }
     }
 
-    /* API - TEACHER LOGIN */
     async function handleTeacherLogin(e) {
       e.preventDefault();
       const btn = document.getElementById("teacherLoginBtn");
@@ -436,7 +425,6 @@
       } finally { btn.disabled = false; }
     }
 
-    /* RENDER STUDENT DASHBOARD */
     function renderStudentDashboard(student) {
       document.getElementById("loginCard").classList.add("hidden");
       document.getElementById("studentDashboardCard").classList.remove("hidden");
@@ -460,7 +448,6 @@
       });
     }
 
-    /* API - FETCH STUDENTS */
     async function fetchAndRenderTeacherPortal() {
       document.getElementById("loginCard").classList.add("hidden");
       document.getElementById("teacherDashboardCard").classList.remove("hidden");
@@ -502,7 +489,6 @@
       });
     }
 
-    /* API - GRADES (ADD & DELETE) */
     async function handleAddOrUpdateGrade(e) {
       e.preventDefault();
       if (!selectedStudent) return;
@@ -535,7 +521,6 @@
       } catch (err) { alert("Delete failed: " + err.message); }
     }
 
-    /* API - ADD SINGLE STUDENT */
     async function handleRegisterStudent() {
       const username = prompt("Username (e.g. kebede):");
       if (!username) return;
@@ -555,7 +540,6 @@
       } catch (err) { alert(err.message); }
     }
 
-    /* CSV BULK UPLOAD */
     function handleCSVUpload(e) {
       const file = e.target.files[0];
       if (!file) return;
@@ -587,7 +571,6 @@
       reader.readAsText(file);
     }
 
-    /* ADMIN PASSWORD CHANGE */
     async function handleChangePassword(e) {
       e.preventDefault();
       const msg = document.getElementById('pwdModalMsg');
@@ -608,7 +591,6 @@
       } catch (err) { msg.className = "error-msg"; msg.textContent = err.message; }
     }
 
-    /* REGISTER CO-TEACHER */
     async function handleRegisterTeacher(e) {
       e.preventDefault();
       const msg = document.getElementById('teacherModalMsg');
@@ -621,7 +603,7 @@
             password: document.getElementById('newTeacherPass').value 
           })
         });
-        const data = await response.json();
+        const data =onna = await response.json();
         if (!response.ok) throw new Error(data.message || 'Failed to register teacher');
         msg.className = "success-msg"; msg.textContent = "New admin created!";
         setTimeout(() => closeModal('teacherModal'), 1500);
