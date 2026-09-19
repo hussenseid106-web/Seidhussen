@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Harbu Secondary School - Advanced Portal</title>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="[https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap](https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap)" rel="stylesheet">
   <style>
     :root {
       --primary: #2563eb;
@@ -360,7 +360,7 @@
   </footer>
 
   <script>
-    const API_BASE_URL = "https://school-result-backend.onrender.com/api";
+    const API_BASE_URL = "[https://school-result-backend.onrender.com/api](https://school-result-backend.onrender.com/api)";
 
     let activeRole = 'student';
     let currentAuthToken = null;
@@ -596,11 +596,13 @@
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ 
+            username: document.getElementById('adminUsername').value.trim(),
             oldPassword: document.getElementById('oldPassword').value, 
             newPassword: document.getElementById('newPassword').value 
           })
         });
-        if (!response.ok) throw new Error('Failed to update password');
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message || 'Failed to update password');
         msg.className = "success-msg"; msg.textContent = "Password updated!";
         setTimeout(() => closeModal('passwordModal'), 1500);
       } catch (err) { msg.className = "error-msg"; msg.textContent = err.message; }
@@ -619,7 +621,8 @@
             password: document.getElementById('newTeacherPass').value 
           })
         });
-        if (!response.ok) throw new Error('Failed to register teacher');
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message || 'Failed to register teacher');
         msg.className = "success-msg"; msg.textContent = "New admin created!";
         setTimeout(() => closeModal('teacherModal'), 1500);
       } catch (err) { msg.className = "error-msg"; msg.textContent = err.message; }
