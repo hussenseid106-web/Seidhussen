@@ -81,7 +81,10 @@
         <div class="flex items-center gap-4">
           <div id="studentAvatarContainer" class="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl overflow-hidden bg-indigo-100 dark:bg-indigo-950 flex items-center justify-center border-2 border-indigo-500/30 flex-shrink-0 shadow-sm"></div>
           <div>
-            <h2 id="studentNameDisplay" class="text-xl sm:text-2xl font-bold">Student Name</h2>
+            <div class="flex items-center gap-2 flex-wrap">
+              <h2 id="studentNameDisplay" class="text-xl sm:text-2xl font-bold">Student Name</h2>
+              <span id="studentHonorBadge" class="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold tracking-wide uppercase bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-400 shadow-xs">Student Portal</span>
+            </div>
             <p id="studentMeta" class="text-xs text-slate-500 dark:text-slate-400 mt-1">Grade -- | Section --</p>
           </div>
         </div>
@@ -93,12 +96,20 @@
 
       <!-- STUDENT RESULTS VIEW -->
       <div id="studentResultsView" class="space-y-6">
-        <!-- Stats Grid (Average, Status, Section Rank, Grade Rank) -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <!-- Advanced Stats Grid (Total, Average, Status, Ranks) -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+          <div class="bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl p-4 flex items-center justify-between">
+            <div>
+              <p class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Total Score</p>
+              <h3 id="studentTotalDisplay" class="text-xl font-black text-slate-900 dark:text-white mt-1">0 / 0</h3>
+            </div>
+            <div class="p-3 bg-indigo-50 dark:bg-indigo-950/60 rounded-xl text-indigo-600 dark:text-indigo-400 text-lg font-bold">📋</div>
+          </div>
+
           <div class="bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl p-4 flex items-center justify-between">
             <div>
               <p class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Average Score</p>
-              <h3 id="studentAvgDisplay" class="text-2xl font-black text-indigo-600 dark:text-indigo-400 mt-1">0.0%</h3>
+              <h3 id="studentAvgDisplay" class="text-xl font-black text-indigo-600 dark:text-indigo-400 mt-1">0.0%</h3>
             </div>
             <div class="p-3 bg-indigo-50 dark:bg-indigo-950/60 rounded-xl text-indigo-600 dark:text-indigo-400 text-lg font-bold">📊</div>
           </div>
@@ -123,7 +134,7 @@
 
           <div class="bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl p-4 flex items-center justify-between">
             <div>
-              <p class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Overall Grade Rank</p>
+              <p class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Grade Rank</p>
               <h3 id="studentGradeRankDisplay" class="text-xl font-extrabold text-emerald-600 dark:text-emerald-400 mt-1">-</h3>
             </div>
             <div class="p-3 bg-emerald-50 dark:bg-emerald-950/60 rounded-xl text-emerald-600 dark:text-emerald-400 text-lg">⭐</div>
@@ -186,12 +197,44 @@
       <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 sm:p-6 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h2 class="text-lg sm:text-xl font-bold">Teacher Administration Portal</h2>
-          <p class="text-xs text-slate-500 dark:text-slate-400">View student contacts, ranks, call options, and manage subject records</p>
+          <p class="text-xs text-slate-500 dark:text-slate-400">View analytics, student contacts, rankings, totals, and subject records</p>
         </div>
         <div class="flex flex-wrap gap-2 w-full md:w-auto">
           <button onclick="openModal('passwordModal')" class="flex-1 md:flex-none px-3 py-2 border border-slate-300 dark:border-slate-700 rounded-lg text-xs font-semibold hover:bg-slate-100 dark:hover:bg-slate-800 transition">🔒 Password</button>
           <button onclick="openModal('teacherModal')" class="flex-1 md:flex-none px-3 py-2 border border-slate-300 dark:border-slate-700 rounded-lg text-xs font-semibold hover:bg-slate-100 dark:hover:bg-slate-800 transition">👥 Add Teacher</button>
           <button onclick="openModal('addStudentModal')" class="flex-1 md:flex-none px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold shadow transition">+ Register Student</button>
+        </div>
+      </div>
+
+      <!-- Advanced Analytics Header Card -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 flex items-center justify-between shadow-sm">
+          <div>
+            <p class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Students in View</p>
+            <h3 id="analyticsTotalStudents" class="text-2xl font-black text-slate-900 dark:text-white mt-1">0</h3>
+          </div>
+          <div class="p-3 bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 rounded-xl text-lg">👥</div>
+        </div>
+        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 flex items-center justify-between shadow-sm">
+          <div>
+            <p class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Filtered Average</p>
+            <h3 id="analyticsClassAvg" class="text-2xl font-black text-indigo-600 dark:text-indigo-400 mt-1">0.0%</h3>
+          </div>
+          <div class="p-3 bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 rounded-xl text-lg">📊</div>
+        </div>
+        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 flex items-center justify-between shadow-sm">
+          <div>
+            <p class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Pass Rate</p>
+            <h3 id="analyticsPassRate" class="text-2xl font-black text-emerald-600 dark:text-emerald-400 mt-1">0%</h3>
+          </div>
+          <div class="p-3 bg-emerald-50 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400 rounded-xl text-lg">📈</div>
+        </div>
+        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 flex items-center justify-between shadow-sm">
+          <div>
+            <p class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Top Performer</p>
+            <h3 id="analyticsTopStudent" class="text-sm font-bold text-slate-800 dark:text-slate-200 mt-1 truncate max-w-[140px]">-</h3>
+          </div>
+          <div class="p-3 bg-amber-50 dark:bg-amber-950 text-amber-600 dark:text-amber-400 rounded-xl text-lg">🏆</div>
         </div>
       </div>
 
@@ -261,8 +304,8 @@
       <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 sm:p-6 shadow-sm space-y-6">
         <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
-            <h3 class="font-bold text-base">Students Directory, Ranks & Phone Contacts</h3>
-            <p class="text-xs text-slate-500 dark:text-slate-400">View section rank, grade rank, and click any phone number to call</p>
+            <h3 class="font-bold text-base">Students Directory, Totals, Ranks & Contacts</h3>
+            <p class="text-xs text-slate-500 dark:text-slate-400">View total scores, section/grade ranks, and call options</p>
           </div>
           <input type="text" id="searchInput" placeholder="Search by name, username, or phone..." oninput="filterStudentsDirectory()" class="w-full md:w-72 px-3 py-2 border border-slate-300 dark:border-slate-700 rounded-lg text-xs bg-transparent focus:ring-2 focus:ring-indigo-600 focus:outline-none">
         </div>
@@ -281,7 +324,7 @@
         
         <!-- Students Table Container -->
         <div class="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800 mt-4">
-          <table class="w-full text-left border-collapse min-w-[950px]">
+          <table class="w-full text-left border-collapse min-w-[1050px]">
             <thead>
               <tr class="bg-slate-50 dark:bg-slate-800/50 text-slate-400 text-xs uppercase tracking-wider font-semibold border-b border-slate-200 dark:border-slate-800">
                 <th class="p-3.5">Student</th>
@@ -289,6 +332,7 @@
                 <th class="p-3.5">Grade & Section</th>
                 <th class="p-3.5">Section Rank</th>
                 <th class="p-3.5">Grade Rank</th>
+                <th class="p-3.5">Total Score</th>
                 <th class="p-3.5">Average & Status</th>
                 <th class="p-3.5 text-right">Action</th>
               </tr>
@@ -466,18 +510,19 @@
     function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
     function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
 
-    /* Helper: Calculate student stats */
+    /* Helper: Calculate student stats including total scores */
     function calculateStats(resultsArray) {
       if (!resultsArray || resultsArray.length === 0) {
-        return { avg: 0, status: 'NO DATA', pass: false };
+        return { total: 0, maxTotal: 0, avg: 0, status: 'NO DATA', pass: false };
       }
       let sum = 0;
       resultsArray.forEach(r => {
         sum += (Number(r.score) || 0);
       });
+      const maxTotal = resultsArray.length * 100;
       const avg = Number((sum / resultsArray.length).toFixed(1));
       const pass = avg >= 50;
-      return { avg, status: pass ? 'PASS' : 'FAIL', pass };
+      return { total: sum, maxTotal, avg, status: pass ? 'PASS' : 'FAIL', pass };
     }
 
     /* RANKING ENGINE: Calculates Section and Grade Ranks dynamically */
@@ -486,7 +531,6 @@
         return { sectionRankStr: 'N/A', gradeRankStr: 'N/A' };
       }
 
-      // Map all students with computed average
       const processed = allStudents.map(s => {
         const res = s.results || s.grades || [];
         const stats = calculateStats(res);
@@ -499,14 +543,12 @@
         };
       });
 
-      // Filter grade peers
       const gradePeers = processed.filter(s => s.grade === String(targetStudent.grade || '11') && s.hasData);
       gradePeers.sort((a, b) => b.avg - a.avg);
       const gradeIndex = gradePeers.findIndex(s => s._id === targetStudent._id);
       const gradeRank = gradeIndex !== -1 ? gradeIndex + 1 : '-';
       const gradeRankStr = gradeIndex !== -1 ? `${gradeRank} / ${gradePeers.length}` : 'N/A';
 
-      // Filter section peers
       const targetSec = String(targetStudent.section || 'A').toUpperCase();
       const sectionPeers = gradePeers.filter(s => s.section === targetSec);
       const sectionIndex = sectionPeers.findIndex(s => s._id === targetStudent._id);
@@ -552,7 +594,6 @@
         currentAuthToken = data.token;
         loggedInStudent = data.student;
 
-        // Fetch all students to ensure rank calculations work accurately
         try {
           const allRes = await fetch(`${API_BASE_URL}/students`);
           if (allRes.ok) studentsCache = await allRes.json();
@@ -700,7 +741,7 @@
       } finally { btn.disabled = false; }
     }
 
-    /* RENDER STUDENT DASHBOARD WITH RANKS */
+    /* RENDER STUDENT DASHBOARD WITH TOTALS & RANKS */
     function renderStudentDashboard(student) {
       document.getElementById("loginCard").classList.add("hidden");
       document.getElementById("studentDashboardCard").classList.remove("hidden");
@@ -714,20 +755,25 @@
       const studentResults = student.results || student.grades || [];
       const stats = calculateStats(studentResults);
 
+      document.getElementById("studentTotalDisplay").textContent = `${stats.total} / ${stats.maxTotal}`;
       document.getElementById("studentAvgDisplay").textContent = `${stats.avg}%`;
 
-      // Calculate Ranks
       const ranks = computeStudentRanks(studentsCache.length ? studentsCache : [student], student);
       document.getElementById("studentSectionRankDisplay").textContent = ranks.sectionRankStr;
       document.getElementById("studentGradeRankDisplay").textContent = ranks.gradeRankStr;
       
       const statusBadgeContainer = document.getElementById("studentStatusBadge");
+      const honorBadge = document.getElementById("studentHonorBadge");
+
       if (studentResults.length === 0) {
         statusBadgeContainer.innerHTML = `<span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400">No Grades</span>`;
+        honorBadge.textContent = "No Records";
       } else if (stats.pass) {
         statusBadgeContainer.innerHTML = `<span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">PASS</span>`;
+        honorBadge.textContent = stats.avg >= 85 ? "★ Honors Distinction" : "✓ Satisfactory Progress";
       } else {
         statusBadgeContainer.innerHTML = `<span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400">FAIL</span>`;
+        honorBadge.textContent = "⚠ Needs Academic Support";
       }
 
       const tbody = document.getElementById("studentResultsBody");
@@ -803,7 +849,7 @@
       renderFilteredStudentsDirectory();
     }
 
-    /* RENDER STUDENTS DIRECTORY WITH SECTION & GRADE RANKS */
+    /* RENDER STUDENTS DIRECTORY WITH TOTAL SCORES & ANALYTICS */
     function renderFilteredStudentsDirectory() {
       const term = document.getElementById("searchInput").value.toLowerCase();
       const tbody = document.getElementById("adminStudentsTableBody");
@@ -816,9 +862,12 @@
         return matchText && matchGrade && matchSection;
       });
 
+      // Update Teacher Advanced Analytics Header
+      updateAnalyticsHeader(filtered);
+
       tbody.innerHTML = "";
       if (!filtered || filtered.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="7" class="p-6 text-center text-slate-400">No students match the current filters.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="8" class="p-6 text-center text-slate-400">No students match the current filters.</td></tr>`;
         return;
       }
 
@@ -848,6 +897,7 @@
             <td class="p-3.5 text-xs font-medium text-slate-600 dark:text-slate-300">Grade ${s.grade || '-'} - ${s.section || 'A'}</td>
             <td class="p-3.5 font-bold text-xs text-indigo-600 dark:text-indigo-400">${ranks.sectionRankStr}</td>
             <td class="p-3.5 font-bold text-xs text-emerald-600 dark:text-emerald-400">${ranks.gradeRankStr}</td>
+            <td class="p-3.5 font-bold text-xs text-slate-800 dark:text-slate-200">${resultsCount > 0 ? stats.total + ' / ' + stats.maxTotal : '--'}</td>
             <td class="p-3.5">
               <div class="flex items-center gap-2">
                 <span class="font-bold text-slate-900 dark:text-white text-xs">${resultsCount > 0 ? stats.avg + '%' : '--'}</span>
@@ -859,6 +909,39 @@
             </td>
           </tr>`;
       });
+    }
+
+    /* UPDATE TEACHER ANALYTICS HEADER */
+    function updateAnalyticsHeader(filteredStudents) {
+      const totalCount = filteredStudents.length;
+      document.getElementById("analyticsTotalStudents").textContent = totalCount;
+
+      let sumAvg = 0;
+      let passCount = 0;
+      let activeGradedCount = 0;
+      let topStudent = null;
+      let highestAvg = -1;
+
+      filteredStudents.forEach(s => {
+        const res = s.results || s.grades || [];
+        if (res.length > 0) {
+          const stats = calculateStats(res);
+          sumAvg += stats.avg;
+          activeGradedCount++;
+          if (stats.pass) passCount++;
+          if (stats.avg > highestAvg) {
+            highestAvg = stats.avg;
+            topStudent = s.fullName;
+          }
+        }
+      });
+
+      const classAvg = activeGradedCount > 0 ? (sumAvg / activeGradedCount).toFixed(1) : 0.0;
+      const passRate = activeGradedCount > 0 ? Math.round((passCount / activeGradedCount) * 100) : 0;
+
+      document.getElementById("analyticsClassAvg").textContent = `${classAvg}%`;
+      document.getElementById("analyticsPassRate").textContent = `${passRate}%`;
+      document.getElementById("analyticsTopStudent").textContent = topStudent || 'None yet';
     }
 
     function filterStudentsDirectory() {
@@ -881,7 +964,7 @@
       editor.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
 
-    fn = closeEditor = function() {
+    function closeEditor() {
       document.getElementById("editorSection").classList.add("hidden");
       selectedStudent = null;
       renderFilteredStudentsDirectory();
