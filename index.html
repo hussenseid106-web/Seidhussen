@@ -272,20 +272,20 @@
   </main>
 
   <!-- MODAL: FIRST TIME PASSWORD CHANGE (MANDATORY & UNCLOSEABLE) -->
-  <div id="firstLoginModal" class="fixed inset-0 bg-black/75 backdrop-blur-md hidden flex items-center justify-center p-4 z-50">
-    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 w-full max-w-md shadow-2xl space-y-4">
-      <div class="text-center space-y-1">
-        <div class="inline-block p-3 bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 rounded-2xl text-2xl font-bold mb-1">🔐</div>
-        <h3 class="font-bold text-lg">Change Your Temporary Code</h3>
-        <p class="text-xs text-slate-500 dark:text-slate-400">For security, you must update your temporary password before accessing your student portal.</p>
+  <div id="firstLoginModal" class="fixed inset-0 bg-black/85 backdrop-blur-md hidden flex items-center justify-center p-4 z-50">
+    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 sm:p-8 w-full max-w-md shadow-2xl space-y-5">
+      <div class="text-center space-y-2">
+        <div class="inline-block p-3.5 bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 rounded-2xl text-3xl font-bold shadow-inner">🔒</div>
+        <h3 class="font-extrabold text-xl">Mandatory Password Update</h3>
+        <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">For security reasons, this is your first time logging in. You must create a new secure password before viewing any student results or accessing your portal.</p>
       </div>
       <form onsubmit="handleFirstLoginPasswordChange(event)" class="space-y-4 pt-2">
         <div>
           <label class="block text-xs font-semibold text-slate-500 mb-1">New Secure Password</label>
-          <input type="password" id="firstLoginNewPassword" required minlength="4" placeholder="Enter new password" class="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-transparent text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600">
+          <input type="password" id="firstLoginNewPassword" required minlength="4" placeholder="Enter new password (min 4 chars)" class="w-full px-3.5 py-3 rounded-lg border border-slate-300 dark:border-slate-700 bg-transparent text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600">
         </div>
         <div id="firstLoginError" class="text-red-500 text-xs font-medium hidden"></div>
-        <button type="submit" class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg text-sm shadow transition">Update Password & Enter Portal</button>
+        <button type="submit" class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 active:scale-[0.99] text-white font-semibold rounded-lg text-sm shadow-md transition">Save Password & Enter Portal</button>
       </form>
     </div>
   </div>
@@ -407,7 +407,7 @@
       }
     }
 
-    /* API - STUDENT LOGIN & MANDATORY FIRST LOGIN CHECK */
+    /* API - STUDENT LOGIN & MANDATORY FIRST LOGIN ENFORCEMENT */
     async function handleStudentLogin(e) {
       e.preventDefault();
       const btn = document.getElementById("studentLoginBtn");
@@ -426,8 +426,22 @@
         currentAuthToken = data.token;
         loggedInStudent = data.student;
 
-        // STRICT MANDATORY CHECK
+        // STRICT ENFORCEMENT: Check if first login flag is active
         if (loggedInStudent.isFirstLogin === true || loggedInStudent.mustChangePassword === true) {
+          // Display dashboard shell but strictly hide results & profile sections until password is changed
+          document.getElementById("loginCard").classList.add("hidden");
+          document.getElementById("studentDashboardCard").classList.remove("hidden");
+          document.getElementById("studentResultsView").classList.add("hidden");
+          document.getElementById("studentSettingsView").classList.add("hidden");
+          document.getElementById("logoutBtn").classList.remove("hidden");
+          
+          document.getElementById("studentNameDisplay").textContent = loggedInStudent.fullName;
+          document.getElementById("studentMeta").textContent = `Grade ${loggedInStudent.grade || '-'} | Section ${loggedInStudent.section || '-'}`;
+          document.getElementById("studentAvatarContainer").innerHTML = getAvatarHTML(loggedInStudent, "w-16 h-16 sm:w-20 sm:h-20");
+
+          // Open mandatory uncloseable password change modal
+          document.getElementById("firstLoginNewPassword").value = "";
+          document.getElementById("firstLoginError").classList.add("hidden");
           openModal('firstLoginModal');
         } else {
           renderStudentDashboard(loggedInStudent);
@@ -444,15 +458,19 @@
       const newPassword = document.getElementById("firstLoginNewPassword").value;
       const errorDiv = document.getElementById("firstLoginError");
       try {
-        await fetch(`${API_BASE_URL}/students/${loggedInStudent._id}`, {
+        const response = await fetch(`${API_BASE_URL}/students/${loggedInStudent._id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ password: newPassword, isFirstLogin: false, mustChangePassword: false })
         });
+        if (!response.ok) throw new Error("Failed to update password on server");
+
         loggedInStudent.password = newPassword;
         loggedInStudent.isFirstLogin = false;
         loggedInStudent.mustChangePassword = false;
+        
         closeModal('firstLoginModal');
+        document.getElementById("studentResultsView").classList.remove("hidden");
         renderStudentDashboard(loggedInStudent);
       } catch (err) {
         errorDiv.textContent = "Failed to update code: " + err.message;
@@ -554,6 +572,7 @@
       document.getElementById("loginCard").classList.add("hidden");
       document.getElementById("studentDashboardCard").classList.remove("hidden");
       document.getElementById("logoutBtn").classList.remove("hidden");
+      document.getElementById("studentResultsView").classList.remove("hidden");
       
       document.getElementById("studentNameDisplay").textContent = student.fullName;
       document.getElementById("studentMeta").textContent = `Grade ${student.grade || '-'} | Section ${student.section || '-'}`;
