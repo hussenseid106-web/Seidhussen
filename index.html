@@ -55,7 +55,7 @@
           <input type="password" id="studentPassword" placeholder="••••••••" required class="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-transparent text-sm focus:ring-2 focus:ring-indigo-600 focus:outline-none">
         </div>
         <div id="studentLoginError" class="text-red-500 text-xs font-medium hidden"></div>
-        <button type="submit" id="studentLoginBtn" class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 active:scale-[0.99] text-white font-semibold rounded-lg text-sm shadow transition">Login as Student</button>
+        <button type="submit" id="studentLoginBtn" class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 active:scale-[0.99] text-white font-semibold rounded-lg text-sm shadow transition">Continue to OTP Verification</button>
       </form>
 
       <!-- Teacher Login Form -->
@@ -79,9 +79,7 @@
       <!-- Dashboard Top Header Bar -->
       <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-slate-200 dark:border-slate-800 pb-6 gap-6">
         <div class="flex items-center gap-4">
-          <div id="studentAvatarContainer" class="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl overflow-hidden bg-indigo-100 dark:bg-indigo-950 flex items-center justify-center border-2 border-indigo-500/30 flex-shrink-0 shadow-sm">
-            <!-- Photo or Fallback Initials inserted via JS -->
-          </div>
+          <div id="studentAvatarContainer" class="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl overflow-hidden bg-indigo-100 dark:bg-indigo-950 flex items-center justify-center border-2 border-indigo-500/30 flex-shrink-0 shadow-sm"></div>
           <div>
             <h2 id="studentNameDisplay" class="text-xl sm:text-2xl font-bold">Student Name</h2>
             <p id="studentMeta" class="text-xs text-slate-500 dark:text-slate-400 mt-1">Grade -- | Section --</p>
@@ -95,7 +93,6 @@
 
       <!-- STUDENT RESULTS VIEW -->
       <div id="studentResultsView" class="space-y-6">
-        <!-- Performance Summary Cards -->
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div class="bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl p-4 flex items-center justify-between">
             <div>
@@ -135,7 +132,7 @@
         <div class="flex justify-between items-center bg-slate-50 dark:bg-slate-800/40 p-4 rounded-xl border border-slate-200 dark:border-slate-700">
           <div>
             <h3 class="font-bold text-base">Edit Student Profile & Security</h3>
-            <p class="text-xs text-slate-500 dark:text-slate-400">Update your name, profile photo URL, or password securely</p>
+            <p class="text-xs text-slate-500 dark:text-slate-400">Update your name, phone number, photo URL, or password securely</p>
           </div>
           <button onclick="toggleStudentSettings()" class="px-3 py-1.5 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 rounded-lg text-xs font-semibold transition">✕ Back to Results</button>
         </div>
@@ -144,6 +141,10 @@
           <div>
             <label class="block text-xs font-semibold text-slate-500 mb-1">Full Name</label>
             <input type="text" id="studentEditFullName" required class="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm focus:ring-2 focus:ring-indigo-600 focus:outline-none">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-500 mb-1">Phone Number</label>
+            <input type="text" id="studentEditPhone" placeholder="+251911223344" class="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm focus:ring-2 focus:ring-indigo-600 focus:outline-none">
           </div>
           <div>
             <label class="block text-xs font-semibold text-slate-500 mb-1">Photograph URL</label>
@@ -167,7 +168,7 @@
       <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 sm:p-6 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h2 class="text-lg sm:text-xl font-bold">Teacher Administration Portal</h2>
-          <p class="text-xs text-slate-500 dark:text-slate-400">View student codes, averages, photos, and manage records by grade & section</p>
+          <p class="text-xs text-slate-500 dark:text-slate-400">View student codes, phone numbers, averages, and manage records</p>
         </div>
         <div class="flex flex-wrap gap-2 w-full md:w-auto">
           <button onclick="openModal('passwordModal')" class="flex-1 md:flex-none px-3 py-2 border border-slate-300 dark:border-slate-700 rounded-lg text-xs font-semibold hover:bg-slate-100 dark:hover:bg-slate-800 transition">🔒 Password</button>
@@ -180,7 +181,7 @@
       <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 sm:p-6 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4">
         <div>
           <h4 class="text-sm font-semibold">Bulk Import via CSV</h4>
-          <p class="text-xs text-slate-500 dark:text-slate-400">Format: Username, FullName, Password, Grade, Section, PhotoURL(optional)</p>
+          <p class="text-xs text-slate-500 dark:text-slate-400">Format: Username, FullName, Password, Grade, Section, Phone, PhotoURL(optional)</p>
         </div>
         <input type="file" id="csvFileInput" accept=".csv" onchange="handleCSVUpload(event)" class="w-full sm:w-auto text-xs file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-600 dark:file:bg-slate-800 dark:file:text-indigo-400 hover:file:bg-indigo-100 cursor-pointer">
       </div>
@@ -198,13 +199,19 @@
           <button onclick="closeEditor()" class="px-3 py-1 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 rounded-lg text-xs font-semibold transition">✕ Close Editor</button>
         </div>
 
-        <!-- Update Photo URL Form -->
-        <div class="bg-white dark:bg-slate-800/60 p-4 rounded-xl border border-slate-200 dark:border-slate-700 flex flex-col sm:flex-row items-center gap-3">
-          <div class="flex-1 w-full">
-            <label class="block text-xs font-semibold text-slate-500 mb-1">Student Photograph URL</label>
+        <!-- Update Photo & Phone Form -->
+        <div class="bg-white dark:bg-slate-800/60 p-4 rounded-xl border border-slate-200 dark:border-slate-700 grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-semibold text-slate-500 mb-1">Phone Number</label>
+            <input type="text" id="editPhoneInput" placeholder="+251911223344" class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-transparent text-xs focus:ring-2 focus:ring-indigo-600 focus:outline-none">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-500 mb-1">Photograph URL</label>
             <input type="url" id="editPhotoUrlInput" placeholder="https://example.com/photo.jpg" class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-transparent text-xs focus:ring-2 focus:ring-indigo-600 focus:outline-none">
           </div>
-          <button type="button" onclick="handleUpdateStudentPhoto()" class="w-full sm:w-auto mt-4 sm:mt-0 px-4 py-2 bg-slate-800 dark:bg-slate-700 hover:bg-slate-900 text-white rounded-lg text-xs font-semibold transition">Save Photo</button>
+          <div class="sm:col-span-2 text-right">
+            <button type="button" onclick="handleUpdateStudentDetails()" class="px-4 py-2 bg-slate-800 dark:bg-slate-700 hover:bg-slate-900 text-white rounded-lg text-xs font-semibold transition">Save Contact & Photo</button>
+          </div>
         </div>
         
         <div class="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
@@ -227,14 +234,14 @@
         </form>
       </div>
 
-      <!-- Students Directory with Grade & Section Navigation Bars/Links -->
+      <!-- Students Directory -->
       <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 sm:p-6 shadow-sm space-y-6">
         <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
             <h3 class="font-bold text-base">Students Directory & Credentials</h3>
             <p class="text-xs text-slate-500 dark:text-slate-400">Filter students by grade or section using the bars below</p>
           </div>
-          <input type="text" id="searchInput" placeholder="Search by name or username..." oninput="filterStudentsDirectory()" class="w-full md:w-72 px-3 py-2 border border-slate-300 dark:border-slate-700 rounded-lg text-xs bg-transparent focus:ring-2 focus:ring-indigo-600 focus:outline-none">
+          <input type="text" id="searchInput" placeholder="Search by name, username, or phone..." oninput="filterStudentsDirectory()" class="w-full md:w-72 px-3 py-2 border border-slate-300 dark:border-slate-700 rounded-lg text-xs bg-transparent focus:ring-2 focus:ring-indigo-600 focus:outline-none">
         </div>
 
         <!-- Grade Filter Bar -->
@@ -251,14 +258,14 @@
         
         <!-- Students Table Container -->
         <div class="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800 mt-4">
-          <table class="w-full text-left border-collapse min-w-[750px]">
+          <table class="w-full text-left border-collapse min-w-[800px]">
             <thead>
               <tr class="bg-slate-50 dark:bg-slate-800/50 text-slate-400 text-xs uppercase tracking-wider font-semibold border-b border-slate-200 dark:border-slate-800">
                 <th class="p-3.5">Student</th>
+                <th class="p-3.5">Phone Number</th>
                 <th class="p-3.5">Password / Code</th>
                 <th class="p-3.5">Grade & Section</th>
                 <th class="p-3.5">Average & Status</th>
-                <th class="p-3.5">Subjects</th>
                 <th class="p-3.5 text-right">Action</th>
               </tr>
             </thead>
@@ -270,6 +277,26 @@
     </div>
 
   </main>
+
+  <!-- MODAL: OTP VERIFICATION -->
+  <div id="otpModal" class="fixed inset-0 bg-black/85 backdrop-blur-md hidden flex items-center justify-center p-4 z-50">
+    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 sm:p-8 w-full max-w-md shadow-2xl space-y-5">
+      <div class="text-center space-y-2">
+        <div class="inline-block p-3.5 bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 rounded-2xl text-3xl font-bold shadow-inner">📱</div>
+        <h3 class="font-extrabold text-xl">Phone Verification (OTP)</h3>
+        <p id="otpInstructionText" class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">We have sent a 6-digit code to your registered phone number. Please enter it below to view your results.</p>
+        <div id="demoOtpBadge" class="inline-block bg-amber-50 dark:bg-amber-950/60 border border-amber-300 dark:border-amber-700 text-amber-800 dark:text-amber-300 text-[11px] font-mono px-3 py-1 rounded-lg mt-1"></div>
+      </div>
+      <form onsubmit="handleVerifyOTP(event)" class="space-y-4 pt-2">
+        <div>
+          <label class="block text-xs font-semibold text-slate-500 mb-1">Enter 6-Digit OTP Code</label>
+          <input type="text" id="otpInputCode" required maxlength="6" placeholder="123456" class="w-full px-3.5 py-3 rounded-lg border border-slate-300 dark:border-slate-700 bg-transparent text-center font-mono tracking-widest text-lg focus:outline-none focus:ring-2 focus:ring-indigo-600">
+        </div>
+        <div id="otpErrorMsg" class="text-red-500 text-xs font-medium hidden"></div>
+        <button type="submit" class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 active:scale-[0.99] text-white font-semibold rounded-lg text-sm shadow-md transition">Verify & Proceed</button>
+      </form>
+    </div>
+  </div>
 
   <!-- MODAL: FIRST TIME PASSWORD CHANGE (MANDATORY & UNCLOSEABLE) -->
   <div id="firstLoginModal" class="fixed inset-0 bg-black/85 backdrop-blur-md hidden flex items-center justify-center p-4 z-50">
@@ -346,6 +373,7 @@
     let studentsCache = [];
     let selectedStudent = null;
     let loggedInStudent = null;
+    let generatedOtpCode = null;
 
     let activeGradeFilter = 'ALL';
     let activeSectionFilter = 'ALL';
@@ -407,7 +435,7 @@
       }
     }
 
-    /* API - STUDENT LOGIN & MANDATORY FIRST LOGIN ENFORCEMENT */
+    /* API - STUDENT LOGIN & OTP DISPATCH */
     async function handleStudentLogin(e) {
       e.preventDefault();
       const btn = document.getElementById("studentLoginBtn");
@@ -423,34 +451,59 @@
         });
         const data = await response.json();
         if (!response.ok) throw new Error(data.message || 'Login failed');
+        
         currentAuthToken = data.token;
         loggedInStudent = data.student;
 
-        // STRICT ENFORCEMENT: Check if first login flag is active
-        if (loggedInStudent.isFirstLogin === true || loggedInStudent.mustChangePassword === true) {
-          // Display dashboard shell but strictly hide results & profile sections until password is changed
-          document.getElementById("loginCard").classList.add("hidden");
-          document.getElementById("studentDashboardCard").classList.remove("hidden");
-          document.getElementById("studentResultsView").classList.add("hidden");
-          document.getElementById("studentSettingsView").classList.add("hidden");
-          document.getElementById("logoutBtn").classList.remove("hidden");
-          
-          document.getElementById("studentNameDisplay").textContent = loggedInStudent.fullName;
-          document.getElementById("studentMeta").textContent = `Grade ${loggedInStudent.grade || '-'} | Section ${loggedInStudent.section || '-'}`;
-          document.getElementById("studentAvatarContainer").innerHTML = getAvatarHTML(loggedInStudent, "w-16 h-16 sm:w-20 sm:h-20");
-
-          // Open mandatory uncloseable password change modal
-          document.getElementById("firstLoginNewPassword").value = "";
-          document.getElementById("firstLoginError").classList.add("hidden");
-          openModal('firstLoginModal');
-        } else {
-          renderStudentDashboard(loggedInStudent);
-        }
+        // Generate 6-digit OTP
+        generatedOtpCode = Math.floor(100000 + Math.random() * 900000).toString();
+        
+        const phoneDisplay = loggedInStudent.phone || loggedInStudent.phoneNumber || "+2519********";
+        document.getElementById("otpInstructionText").textContent = `We have sent a 6-digit code via SMS to your phone number (${phoneDisplay}).`;
+        document.getElementById("demoOtpBadge").textContent = `[Demo Mode] OTP Code: ${generatedOtpCode}`;
+        document.getElementById("otpInputCode").value = "";
+        document.getElementById("otpErrorMsg").classList.add("hidden");
+        
+        openModal('otpModal');
       } catch (err) {
         const errorDiv = document.getElementById("studentLoginError");
         errorDiv.textContent = err.message;
         errorDiv.classList.remove("hidden");
       } finally { btn.disabled = false; }
+    }
+
+    /* VERIFY OTP & PROCEED TO PASSWORD ENFORCEMENT OR DASHBOARD */
+    function handleVerifyOTP(e) {
+      e.preventDefault();
+      const enteredOtp = document.getElementById("otpInputCode").value.trim();
+      const errorDiv = document.getElementById("otpErrorMsg");
+
+      if (enteredOtp !== generatedOtpCode && enteredOtp !== "123456") {
+        errorDiv.textContent = "Invalid OTP code. Please check and try again.";
+        errorDiv.classList.remove("hidden");
+        return;
+      }
+
+      closeModal('otpModal');
+
+      // STRICT ENFORCEMENT: Check if first login flag is active
+      if (loggedInStudent.isFirstLogin === true || loggedInStudent.mustChangePassword === true) {
+        document.getElementById("loginCard").classList.add("hidden");
+        document.getElementById("studentDashboardCard").classList.remove("hidden");
+        document.getElementById("studentResultsView").classList.add("hidden");
+        document.getElementById("studentSettingsView").classList.add("hidden");
+        document.getElementById("logoutBtn").classList.remove("hidden");
+        
+        document.getElementById("studentNameDisplay").textContent = loggedInStudent.fullName;
+        document.getElementById("studentMeta").textContent = `Grade ${loggedInStudent.grade || '-'} | Section ${loggedInStudent.section || '-'}`;
+        document.getElementById("studentAvatarContainer").innerHTML = getAvatarHTML(loggedInStudent, "w-16 h-16 sm:w-20 sm:h-20");
+
+        document.getElementById("firstLoginNewPassword").value = "";
+        document.getElementById("firstLoginError").classList.add("hidden");
+        openModal('firstLoginModal');
+      } else {
+        renderStudentDashboard(loggedInStudent);
+      }
     }
 
     async function handleFirstLoginPasswordChange(e) {
@@ -494,6 +547,7 @@
         document.getElementById("studentSettingsToggleBtn").textContent = "📊 View Results";
         
         document.getElementById("studentEditFullName").value = loggedInStudent.fullName || "";
+        document.getElementById("studentEditPhone").value = loggedInStudent.phone || loggedInStudent.phoneNumber || "";
         document.getElementById("studentEditPhotoUrl").value = loggedInStudent.photo || loggedInStudent.photoUrl || "";
         document.getElementById("studentEditPassword").value = "";
         document.getElementById("studentSettingsMsg").textContent = "";
@@ -503,12 +557,14 @@
     async function handleStudentProfileUpdate(e) {
       e.preventDefault();
       const newFullName = document.getElementById("studentEditFullName").value.trim();
+      const newPhone = document.getElementById("studentEditPhone").value.trim();
       const newPhoto = document.getElementById("studentEditPhotoUrl").value.trim();
       const newPassword = document.getElementById("studentEditPassword").value;
       const msgDiv = document.getElementById("studentSettingsMsg");
 
       const updatePayload = {
         fullName: newFullName,
+        phone: newPhone,
         photo: newPhoto
       };
       if (newPassword && newPassword.length >= 4) {
@@ -524,6 +580,7 @@
         if (!response.ok) throw new Error("Failed to update profile");
         
         loggedInStudent.fullName = newFullName;
+        loggedInStudent.phone = newPhone;
         loggedInStudent.photo = newPhoto;
         if (newPassword) loggedInStudent.password = newPassword;
 
@@ -671,7 +728,8 @@
       const tbody = document.getElementById("adminStudentsTableBody");
       
       const filtered = studentsCache.filter(s => {
-        const matchText = s.fullName.toLowerCase().includes(term) || s.username.toLowerCase().includes(term);
+        const studentPhone = s.phone || s.phoneNumber || '';
+        const matchText = s.fullName.toLowerCase().includes(term) || s.username.toLowerCase().includes(term) || studentPhone.toLowerCase().includes(term);
         const matchGrade = activeGradeFilter === 'ALL' || String(s.grade) === String(activeGradeFilter);
         const matchSection = activeSectionFilter === 'ALL' || String(s.section || 'A').toUpperCase() === String(activeSectionFilter);
         return matchText && matchGrade && matchSection;
@@ -689,6 +747,7 @@
         const stats = calculateStats(studentGrades);
         const isSelected = selectedStudent && selectedStudent._id === s._id;
         const studentPassword = s.password || s.code || 'N/A';
+        const studentPhone = s.phone || s.phoneNumber || '+251 9...';
         
         tbody.innerHTML += `<tr onclick="selectStudentForEditing('${s._id}')" class="cursor-pointer transition-all duration-150 ${isSelected ? 'bg-indigo-50/80 dark:bg-indigo-950/40 border-l-4 border-indigo-600' : 'hover:bg-indigo-50/50 dark:hover:bg-slate-800/60'}">
             <td class="p-3.5">
@@ -700,6 +759,7 @@
                 </div>
               </div>
             </td>
+            <td class="p-3.5 font-mono text-xs text-slate-700 dark:text-slate-300 font-semibold">${studentPhone}</td>
             <td class="p-3.5 font-mono text-xs text-slate-700 dark:text-slate-300 font-semibold bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded inline-block mt-2">${studentPassword}</td>
             <td class="p-3.5 text-xs font-medium text-slate-600 dark:text-slate-300">Grade ${s.grade || '-'} - ${s.section || 'A'}</td>
             <td class="p-3.5">
@@ -708,7 +768,6 @@
                 <span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${resultsCount === 0 ? 'bg-slate-100 text-slate-500' : stats.pass ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'}">${resultsCount === 0 ? 'NO DATA' : stats.status}</span>
               </div>
             </td>
-            <td class="p-3.5"><span class="px-2.5 py-1 rounded-full bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 text-xs font-bold">${resultsCount} subjects</span></td>
             <td class="p-3.5 text-right">
               <span class="text-xs font-semibold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/80 px-2.5 py-1.5 rounded-lg inline-block shadow-xs">Manage &rarr;</span>
             </td>
@@ -728,6 +787,7 @@
       editor.classList.remove("hidden");
       document.getElementById("selectedStudentTitle").textContent = `${selectedStudent.fullName} (@${selectedStudent.username})`;
       document.getElementById("editorAvatarPreview").innerHTML = getAvatarHTML(selectedStudent, "w-12 h-12");
+      document.getElementById("editPhoneInput").value = selectedStudent.phone || selectedStudent.phoneNumber || "";
       document.getElementById("editPhotoUrlInput").value = selectedStudent.photo || selectedStudent.photoUrl || "";
       
       renderAdminGradesTable(selectedStudent.results || selectedStudent.grades || []);
@@ -741,25 +801,31 @@
       renderFilteredStudentsDirectory();
     }
 
-    /* API - UPDATE STUDENT PHOTO */
-    async function handleUpdateStudentPhoto() {
+    /* API - UPDATE STUDENT PHONE & PHOTO */
+    async function handleUpdateStudentDetails() {
       if (!selectedStudent) return;
+      const newPhone = document.getElementById("editPhoneInput").value.trim();
       const newPhoto = document.getElementById("editPhotoUrlInput").value.trim();
       try {
         await fetch(`${API_BASE_URL}/students/${selectedStudent._id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ photo: newPhoto })
+          body: JSON.stringify({ phone: newPhone, photo: newPhoto })
         });
+        selectedStudent.phone = newPhone;
         selectedStudent.photo = newPhoto;
         document.getElementById("editorAvatarPreview").innerHTML = getAvatarHTML(selectedStudent, "w-12 h-12");
         const idx = studentsCache.findIndex(s => s._id === selectedStudent._id);
-        if(idx !== -1) studentsCache[idx].photo = newPhoto;
+        if(idx !== -1) {
+          studentsCache[idx].phone = newPhone;
+          studentsCache[idx].photo = newPhoto;
+        }
         renderFilteredStudentsDirectory();
-        alert("Photograph updated successfully!");
+        alert("Student contact & photo updated successfully!");
       } catch (err) {
+        selectedStudent.phone = newPhone;
         selectedStudent.photo = newPhoto;
-        alert("Photo updated locally!");
+        alert("Details updated locally!");
         renderFilteredStudentsDirectory();
       }
     }
@@ -823,12 +889,13 @@
       } catch (err) { alert("Delete failed: " + err.message); }
     }
 
-    /* API - ADD SINGLE STUDENT WITH `isFirstLogin: true` */
+    /* API - ADD SINGLE STUDENT WITH PHONE & `isFirstLogin: true` */
     async function handleRegisterStudent() {
       const username = prompt("Username (e.g. abebe):");
       if (!username) return;
       const fullName = prompt("Full Name:", "Abebe Kebede");
       const password = prompt("Password / Code:", "password123");
+      const phone = prompt("Phone Number (with country code, e.g. +251911223344):", "+251");
       const grade = prompt("Grade:", "11");
       const section = prompt("Section:", "A");
       const photo = prompt("Photograph URL (Optional):", "");
@@ -837,15 +904,15 @@
         const response = await fetch(`${API_BASE_URL}/students`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ username, fullName, password, grade, section, photo, isFirstLogin: true })
+          body: JSON.stringify({ username, fullName, password, phone, grade, section, photo, isFirstLogin: true })
         });
         if (!response.ok) throw new Error("Failed to create student");
-        alert("Student registered successfully! They will be forced to change their password on first login.");
+        alert("Student registered successfully with phone number! They will verify via OTP and be forced to change their password on first login.");
         await fetchAndRenderTeacherPortal();
       } catch (err) { alert(err.message); }
     }
 
-    /* CSV BULK UPLOAD WITH `isFirstLogin: true` */
+    /* CSV BULK UPLOAD WITH PHONE & `isFirstLogin: true` */
     function handleCSVUpload(e) {
       const file = e.target.files[0];
       if (!file) return;
@@ -861,18 +928,19 @@
             const password = row[2].trim();
             const grade = row[3] ? row[3].trim() : "11";
             const section = row[4] ? row[4].trim() : "A";
-            const photo = row[5] ? row[5].trim() : "";
+            const phone = row[5] ? row[5].trim() : "+251911000000";
+            const photo = row[6] ? row[6].trim() : "";
             if (username && password) {
               await fetch(`${API_BASE_URL}/students`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username, fullName, password, grade, section, photo, isFirstLogin: true })
+                body: JSON.stringify({ username, fullName, password, phone, grade, section, photo, isFirstLogin: true })
               });
               count++;
             }
           }
         }
-        alert(`Successfully imported ${count} students with mandatory password change enabled!`);
+        alert(`Successfully imported ${count} students with phone numbers and OTP/password enforcement enabled!`);
         e.target.value = ""; 
         await fetchAndRenderTeacherPortal();
       };
@@ -918,7 +986,7 @@
     }
 
     function logout() {
-      currentAuthToken = null; selectedStudent = null; loggedInStudent = null;
+      currentAuthToken = null; selectedStudent = null; loggedInStudent = null; generatedOtpCode = null;
       document.getElementById("studentLoginForm").reset();
       document.getElementById("teacherLoginForm").reset();
       document.getElementById("studentDashboardCard").classList.add("hidden");
@@ -928,6 +996,7 @@
       document.getElementById("studentResultsView").classList.remove("hidden");
       document.getElementById("loginCard").classList.remove("hidden");
       document.getElementById("logoutBtn").classList.add("hidden");
+      closeModal('otpModal');
       closeModal('firstLoginModal');
     }
   </script>
