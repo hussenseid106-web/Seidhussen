@@ -143,7 +143,7 @@
         </div>
       </div>
 
-      <!-- Grade Editor Section (Appears when editing a specific student) -->
+      <!-- Grade Editor Section -->
       <div id="editorSection" class="hidden bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm space-y-4">
         <div class="flex justify-between items-center border-b border-slate-200 dark:border-slate-800 pb-3">
           <h3 id="selectedStudentTitle" class="font-bold text-base text-indigo-600 dark:text-indigo-400">Editing Grades</h3>
@@ -315,13 +315,14 @@
       document.getElementById("studentNameDisplay").textContent = student.fullName;
       document.getElementById("studentMeta").textContent = `Grade ${student.grade || '-'} | Section ${student.section || '-'}`;
 
+      const studentResults = student.results || student.grades || [];
       const tbody = document.getElementById("studentResultsBody");
       tbody.innerHTML = "";
-      if (!student.results || student.results.length === 0) {
+      if (studentResults.length === 0) {
         tbody.innerHTML = `<tr><td colspan="4" class="p-6 text-center text-slate-400">No subject grades recorded yet.</td></tr>`;
         return;
       }
-      student.results.forEach(res => {
+      studentResults.forEach(res => {
         const isPass = res.score >= 50;
         tbody.innerHTML += `<tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition">
             <td class="p-4 font-medium">${res.subject}</td>
@@ -353,7 +354,8 @@
         return;
       }
       students.forEach(s => {
-        const resultsCount = s.results ? s.results.length : 0;
+        const studentGrades = s.results || s.grades || [];
+        const resultsCount = studentGrades.length;
         tbody.innerHTML += `<tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition">
             <td class="p-3.5">
               <div class="font-semibold text-slate-900 dark:text-white">${s.fullName}</div>
@@ -383,7 +385,7 @@
       if (!selectedStudent) { editor.classList.add("hidden"); return; }
       editor.classList.remove("hidden");
       document.getElementById("selectedStudentTitle").textContent = `Editing Record: ${selectedStudent.fullName} (@${selectedStudent.username})`;
-      renderAdminGradesTable(selectedStudent.results);
+      renderAdminGradesTable(selectedStudent.results || selectedStudent.grades || []);
       editor.scrollIntoView({ behavior: 'smooth' });
     }
 
@@ -425,11 +427,11 @@
         });
         const data = await response.json();
         if (!response.ok) throw new Error(data.message);
-        selectedStudent.results = data.results;
-        renderAdminGradesTable(data.results);
-        // Refresh cache entry
+        const updatedGrades = data.results || data.grades || [];
+        selectedStudent.results = updatedGrades;
+        renderAdminGradesTable(updatedGrades);
         const idx = studentsCache.findIndex(s => s._id === selectedStudent._id);
-        if(idx !== -1) studentsCache[idx].results = data.results;
+        if(idx !== -1) studentsCache[idx].results = updatedGrades;
         renderAdminStudentsTable(studentsCache);
         document.getElementById("newSubjectName").value = "";
         document.getElementById("newSubjectScore").value = "";
@@ -442,10 +444,11 @@
         const response = await fetch(`${API_BASE_URL}/students/${selectedStudent._id}/grades/${subjectId}`, { method: 'DELETE' });
         const data = await response.json();
         if (!response.ok) throw new Error(data.message);
-        selectedStudent.results = data.results;
-        renderAdminGradesTable(data.results);
+        const updatedGrades = data.results || data.grades || [];
+        selectedStudent.results = updatedGrades;
+        renderAdminGradesTable(updatedGrades);
         const idx = studentsCache.findIndex(s => s._id === selectedStudent._id);
-        if(idx !== -1) studentsCache[idx].results = data.results;
+        if(idx !== -1) studentsCache[idx].results = updatedGrades;
         renderAdminStudentsTable(studentsCache);
       } catch (err) { alert("Delete failed: " + err.message); }
     }
