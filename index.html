@@ -175,8 +175,8 @@
 
           <div class="bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl p-4 flex items-center justify-between">
             <div>
-              <p class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Section Rank</p>
-              <h3 id="studentSectionRankDisplay" class="text-xl font-extrabold text-indigo-600 dark:text-indigo-400 mt-1">-</h3>
+              <p class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Section Rank & Stream</p>
+              <h3 id="studentSectionRankDisplay" class="text-base sm:text-lg font-extrabold text-indigo-600 dark:text-indigo-400 mt-1">-</h3>
             </div>
             <div class="p-3 bg-indigo-50 dark:bg-indigo-950/60 rounded-xl text-indigo-600 dark:text-indigo-400 text-lg">🏆</div>
           </div>
@@ -890,7 +890,9 @@
       document.getElementById("studentAvgDisplay").textContent = `${stats.avg}%`;
 
       const ranks = computeStudentRanks(studentsCache.length ? studentsCache : [student], student);
-      document.getElementById("studentSectionRankDisplay").textContent = ranks.sectionRankStr;
+      
+      // Display Section Rank along with stream right next to it
+      document.getElementById("studentSectionRankDisplay").innerHTML = `${ranks.sectionRankStr} <span class="block text-[11px] font-medium text-slate-500 dark:text-slate-400 mt-0.5">${streamText}</span>`;
       document.getElementById("studentGradeRankDisplay").textContent = ranks.gradeRankStr;
       
       const statusBadgeContainer = document.getElementById("studentStatusBadge");
