@@ -20,13 +20,16 @@
     }
   </script>
   <style>
+    .print-only {
+      display: none !important;
+    }
     @media print {
       body {
         background-color: #ffffff !important;
         color: #000000 !important;
         font-family: 'Times New Roman', Times, serif, sans-serif;
       }
-      header, nav, button, input, select, .no-print, #loginCard, #teacherDashboardCard, #studentSettingsToggleBtn, #studentSettingsView {
+      header, nav, button, input, select, .no-print, #loginCard, #teacherDashboardCard, #studentSettingsToggleBtn, #studentSettingsView, #teacherDashboardGradeSection, #teacherBackBtn {
         display: none !important;
       }
       #studentDashboardCard {
@@ -47,6 +50,9 @@
         display: flex !important;
         justify-content: space-between !important;
         margin-top: 50px !important;
+      }
+      .print-only {
+        display: block !important;
       }
     }
   </style>
@@ -124,12 +130,13 @@
         
         <!-- Action Buttons & QR Code Verification Container -->
         <div class="flex items-center gap-4">
-          <div id="qrcodeContainer" class="hidden sm:block bg-white p-1.5 rounded-lg border border-slate-200 shadow-xs text-center">
+          <div id="qrcodeContainer" class="hidden print-only bg-white p-1.5 rounded-lg border border-slate-200 shadow-xs text-center">
             <!-- Dynamic QR Code loaded via JS -->
             <img id="certQrCode" src="" alt="Verification QR" class="w-16 h-16 object-contain">
             <span class="text-[9px] font-bold text-slate-400 block mt-0.5">VERIFIED ID</span>
           </div>
           <div class="no-print flex flex-wrap items-center gap-2">
+            <button id="teacherBackBtn" onclick="backToTeacherPortal()" class="hidden px-3.5 py-2 bg-slate-800 hover:bg-slate-900 text-white rounded-lg text-xs font-semibold transition flex items-center gap-2 shadow-sm">← Back to Teacher Portal</button>
             <button onclick="toggleStudentSettings()" id="studentSettingsToggleBtn" class="px-3.5 py-2 border border-slate-300 dark:border-slate-700 rounded-lg text-xs font-semibold hover:bg-slate-100 dark:hover:bg-slate-800 transition flex items-center gap-2 shadow-xs">⚙️ Profile Settings</button>
             <button onclick="window.print()" class="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold transition flex items-center gap-2 shadow-sm">🖨️ Print Official Certificate</button>
           </div>
@@ -242,6 +249,59 @@
         </form>
       </div>
 
+      <!-- TEACHER GRADE MANAGEMENT SECTION (Visible only when teacher views student dashboard) -->
+      <div id="teacherDashboardGradeSection" class="hidden no-print bg-indigo-50/50 dark:bg-slate-900 border-2 border-indigo-500 dark:border-indigo-600 rounded-2xl p-5 sm:p-6 shadow-md space-y-5 mt-6 transition-all duration-300">
+        <div class="flex justify-between items-center border-b border-indigo-200 dark:border-slate-800 pb-3">
+          <h3 class="font-bold text-base text-slate-900 dark:text-white">Teacher Management & Grade Editor</h3>
+          <span id="teacherEditorStreamBadge" class="text-[10px] uppercase tracking-wider font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-100 dark:bg-indigo-950/60 px-2 py-0.5 rounded">Stream</span>
+        </div>
+
+        <!-- Update Photo & Phone Form -->
+        <div class="bg-white dark:bg-slate-800/60 p-4 rounded-xl border border-slate-200 dark:border-slate-700 grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-semibold text-slate-500 mb-1">Phone Number (Calling)</label>
+            <input type="text" id="dashEditPhoneInput" placeholder="+251911223344" class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-transparent text-xs focus:ring-2 focus:ring-indigo-600 focus:outline-none">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-500 mb-1">Photograph URL</label>
+            <input type="url" id="dashEditPhotoUrlInput" placeholder="https://example.com/photo.jpg" class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-transparent text-xs focus:ring-2 focus:ring-indigo-600 focus:outline-none">
+          </div>
+          <div class="sm:col-span-2 text-right">
+            <button type="button" onclick="handleDashUpdateStudentDetails()" class="px-4 py-2 bg-slate-800 dark:bg-slate-700 hover:bg-slate-900 text-white rounded-lg text-xs font-semibold transition">Save Contact & Photo</button>
+          </div>
+        </div>
+
+        <!-- Subject States Table -->
+        <div class="space-y-2">
+          <h4 class="text-xs font-bold text-slate-500 uppercase tracking-wider">Subject States & Scores Breakdown</h4>
+          <div class="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
+            <table class="w-full text-left border-collapse min-w-[350px]">
+              <thead>
+                <tr class="bg-slate-50 dark:bg-slate-800/50 text-slate-400 text-xs uppercase tracking-wider font-semibold">
+                  <th class="p-3">Subject</th>
+                  <th class="p-3">Score (0-100)</th>
+                  <th class="p-3">State</th>
+                  <th class="p-3 text-center">Action</th>
+                </tr>
+              </thead>
+              <tbody id="dashAdminGradesBody" class="divide-y divide-slate-200 dark:divide-slate-800 text-sm"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Permanent Subject Quick Presets -->
+        <div class="space-y-1.5 pt-1">
+          <label class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider">Quick Select Curriculum Subjects (Permanent Presets):</label>
+          <div id="dashSubjectPresetsContainer" class="flex flex-wrap gap-1.5"></div>
+        </div>
+
+        <form onsubmit="handleDashAddOrUpdateGrade(event)" class="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+          <input type="text" id="dashNewSubjectName" placeholder="Subject Name (e.g. Mathematics)" required class="px-3.5 py-2.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm focus:ring-2 focus:ring-indigo-600 focus:outline-none">
+          <input type="number" id="dashNewSubjectScore" min="0" max="100" placeholder="Score (0-100)" required class="px-3.5 py-2.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm focus:ring-2 focus:ring-indigo-600 focus:outline-none">
+          <button type="submit" class="py-2.5 bg-indigo-600 hover:bg-indigo-700 active:scale-[0.99] text-white font-semibold rounded-lg text-xs shadow transition">Add / Update Score</button>
+        </form>
+      </div>
+
     </div>
 
     <!-- TEACHER / ADMIN DASHBOARD -->
@@ -299,65 +359,6 @@
           <p class="text-xs text-slate-500 dark:text-slate-400">Format: Username, FullName, Password, Grade(9-12), Section(A/B/C/D), Phone, PhotoURL(optional)</p>
         </div>
         <input type="file" id="csvFileInput" accept=".csv" onchange="handleCSVUpload(event)" class="w-full sm:w-auto text-xs file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-600 dark:file:bg-slate-800 dark:file:text-indigo-400 hover:file:bg-indigo-100 cursor-pointer">
-      </div>
-
-      <!-- Grade & Subject Editor Section -->
-      <div id="editorSection" class="hidden bg-indigo-50/50 dark:bg-slate-900 border-2 border-indigo-500 dark:border-indigo-600 rounded-2xl p-5 sm:p-6 shadow-md space-y-5 transition-all duration-300">
-        <div class="flex justify-between items-center border-b border-indigo-200 dark:border-slate-800 pb-3">
-          <div class="flex items-center gap-3">
-            <div id="editorAvatarPreview" class="w-12 h-12 rounded-xl overflow-hidden bg-indigo-100 dark:bg-indigo-950 flex items-center justify-center border border-indigo-300 flex-shrink-0"></div>
-            <div>
-              <span id="editorStreamBadge" class="text-[10px] uppercase tracking-wider font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-100 dark:bg-indigo-950/60 px-2 py-0.5 rounded">Stream</span>
-              <h3 id="selectedStudentTitle" class="font-bold text-base sm:text-lg text-slate-900 dark:text-white mt-0.5">Student Name</h3>
-            </div>
-          </div>
-          <button onclick="closeEditor()" class="px-3 py-1 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 rounded-lg text-xs font-semibold transition">✕ Close Editor</button>
-        </div>
-
-        <!-- Update Photo & Phone Form -->
-        <div class="bg-white dark:bg-slate-800/60 p-4 rounded-xl border border-slate-200 dark:border-slate-700 grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <label class="block text-xs font-semibold text-slate-500 mb-1">Phone Number (Calling)</label>
-            <input type="text" id="editPhoneInput" placeholder="+251911223344" class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-transparent text-xs focus:ring-2 focus:ring-indigo-600 focus:outline-none">
-          </div>
-          <div>
-            <label class="block text-xs font-semibold text-slate-500 mb-1">Photograph URL</label>
-            <input type="url" id="editPhotoUrlInput" placeholder="https://example.com/photo.jpg" class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-transparent text-xs focus:ring-2 focus:ring-indigo-600 focus:outline-none">
-          </div>
-          <div class="sm:col-span-2 text-right">
-            <button type="button" onclick="handleUpdateStudentDetails()" class="px-4 py-2 bg-slate-800 dark:bg-slate-700 hover:bg-slate-900 text-white rounded-lg text-xs font-semibold transition">Save Contact & Photo</button>
-          </div>
-        </div>
-        
-        <!-- Subject States Table -->
-        <div class="space-y-2">
-          <h4 class="text-xs font-bold text-slate-500 uppercase tracking-wider">Subject States & Scores Breakdown</h4>
-          <div class="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
-            <table class="w-full text-left border-collapse min-w-[350px]">
-              <thead>
-                <tr class="bg-slate-50 dark:bg-slate-800/50 text-slate-400 text-xs uppercase tracking-wider font-semibold">
-                  <th class="p-3">Subject</th>
-                  <th class="p-3">Score (0-100)</th>
-                  <th class="p-3">State</th>
-                  <th class="p-3 text-center">Action</th>
-                </tr>
-              </thead>
-              <tbody id="adminGradesBody" class="divide-y divide-slate-200 dark:divide-slate-800 text-sm"></tbody>
-            </table>
-          </div>
-        </div>
-
-        <!-- Permanent Subject Quick Presets -->
-        <div class="space-y-1.5 pt-1">
-          <label class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider">Quick Select Curriculum Subjects (Permanent Presets):</label>
-          <div id="subjectPresetsContainer" class="flex flex-wrap gap-1.5"></div>
-        </div>
-
-        <form onsubmit="handleAddOrUpdateGrade(event)" class="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
-          <input type="text" id="newSubjectName" placeholder="Subject Name (e.g. Mathematics)" required class="px-3.5 py-2.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm focus:ring-2 focus:ring-indigo-600 focus:outline-none">
-          <input type="number" id="newSubjectScore" min="0" max="100" placeholder="Score (0-100)" required class="px-3.5 py-2.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm focus:ring-2 focus:ring-indigo-600 focus:outline-none">
-          <button type="submit" class="py-2.5 bg-indigo-600 hover:bg-indigo-700 active:scale-[0.99] text-white font-semibold rounded-lg text-xs shadow transition">Add / Update Score</button>
-        </form>
       </div>
 
       <!-- Students Directory -->
@@ -715,6 +716,8 @@
           document.getElementById("studentResultsView").classList.add("hidden");
           document.getElementById("studentSettingsView").classList.add("hidden");
           document.getElementById("logoutBtn").classList.remove("hidden");
+          document.getElementById("teacherBackBtn").classList.add("hidden");
+          document.getElementById("teacherDashboardGradeSection").classList.add("hidden");
           
           const streamText = getStudentStream(loggedInStudent.grade, loggedInStudent.section);
           document.getElementById("studentNameDisplay").textContent = loggedInStudent.fullName;
@@ -725,6 +728,8 @@
           document.getElementById("firstLoginError").classList.add("hidden");
           openModal('firstLoginModal');
         } else {
+          document.getElementById("teacherBackBtn").classList.add("hidden");
+          document.getElementById("teacherDashboardGradeSection").classList.add("hidden");
           renderStudentDashboard(loggedInStudent);
         }
       } catch (err) {
@@ -769,10 +774,14 @@
         settingsView.classList.add("hidden");
         resultsView.classList.remove("hidden");
         document.getElementById("studentSettingsToggleBtn").textContent = "⚙️ Profile Settings";
+        if (activeRole === 'teacher') {
+          document.getElementById("teacherDashboardGradeSection").classList.remove("hidden");
+        }
       } else {
         resultsView.classList.add("hidden");
         settingsView.classList.remove("hidden");
         document.getElementById("studentSettingsToggleBtn").textContent = "📊 View Results";
+        document.getElementById("teacherDashboardGradeSection").classList.add("hidden");
         
         document.getElementById("studentEditFullName").value = loggedInStudent.fullName || "";
         document.getElementById("studentEditPhone").value = loggedInStudent.phone || loggedInStudent.phoneNumber || "";
@@ -1046,7 +1055,7 @@
               </div>
             </td>
             <td class="p-3.5 text-right">
-              <span class="text-xs font-semibold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/80 px-2.5 py-1.5 rounded-lg inline-block shadow-xs">Manage &rarr;</span>
+              <span class="text-xs font-semibold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/80 px-2.5 py-1.5 rounded-lg inline-block shadow-xs">View Dashboard &rarr;</span>
             </td>
           </tr>`;
       });
@@ -1089,33 +1098,42 @@
       renderFilteredStudentsDirectory();
     }
 
+    /* CLICK STUDENT ROW IN TEACHER PORTAL -> SHOW STUDENT DASHBOARD WITH TEACHER EDIT TOOLS */
     function selectStudentForEditing(id) {
       selectedStudent = studentsCache.find(s => s._id === id);
-      const editor = document.getElementById("editorSection");
-      if (!selectedStudent) { editor.classList.add("hidden"); return; }
+      if (!selectedStudent) return;
       
-      editor.classList.remove("hidden");
-      document.getElementById("selectedStudentTitle").textContent = `${selectedStudent.fullName} (@${selectedStudent.username})`;
-      document.getElementById("editorAvatarPreview").innerHTML = getAvatarHTML(selectedStudent, "w-12 h-12");
-      document.getElementById("editorStreamBadge").textContent = getStudentStream(selectedStudent.grade, selectedStudent.section);
-      document.getElementById("editPhoneInput").value = selectedStudent.phone || selectedStudent.phoneNumber || "";
-      document.getElementById("editPhotoUrlInput").value = selectedStudent.photo || selectedStudent.photoUrl || "";
-      
-      renderAdminGradesTable(selectedStudent.results || selectedStudent.grades || []);
-      renderSubjectPresets(selectedStudent);
-      renderFilteredStudentsDirectory();
-      editor.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      if (activeRole === 'teacher') {
+        document.getElementById("teacherDashboardCard").classList.add("hidden");
+        document.getElementById("studentDashboardCard").classList.remove("hidden");
+        document.getElementById("studentResultsView").classList.remove("hidden");
+        document.getElementById("studentSettingsView").classList.add("hidden");
+        document.getElementById("logoutBtn").classList.remove("hidden");
+        document.getElementById("teacherBackBtn").classList.remove("hidden");
+        document.getElementById("teacherDashboardGradeSection").classList.remove("hidden");
+
+        renderStudentDashboard(selectedStudent);
+        renderDashAdminGradesTable(selectedStudent.results || selectedStudent.grades || []);
+        renderDashSubjectPresets(selectedStudent);
+        
+        document.getElementById("dashEditPhoneInput").value = selectedStudent.phone || selectedStudent.phoneNumber || "";
+        document.getElementById("dashEditPhotoUrlInput").value = selectedStudent.photo || selectedStudent.photoUrl || "";
+        document.getElementById("teacherEditorStreamBadge").textContent = getStudentStream(selectedStudent.grade, selectedStudent.section);
+      }
     }
 
-    function closeEditor() {
-      document.getElementById("editorSection").classList.add("hidden");
+    function backToTeacherPortal() {
+      document.getElementById("studentDashboardCard").classList.add("hidden");
+      document.getElementById("teacherDashboardCard").classList.remove("hidden");
+      document.getElementById("teacherBackBtn").classList.add("hidden");
+      document.getElementById("teacherDashboardGradeSection").classList.add("hidden");
       selectedStudent = null;
       renderFilteredStudentsDirectory();
     }
 
     /* PERMANENT SUBJECT PRESETS MATCHING OFFICIAL CERTIFICATE CURRICULUM */
-    function renderSubjectPresets(student) {
-      const container = document.getElementById("subjectPresetsContainer");
+    function renderDashSubjectPresets(student) {
+      const container = document.getElementById("dashSubjectPresetsContainer");
       if (!container) return;
       const g = String(student.grade || '9');
       const s = String(student.section || 'A').toUpperCase();
@@ -1125,10 +1143,8 @@
         subjects = ["Amharic", "English", "Mathematics", "Physics", "Chemistry", "Biology", "Geography", "History", "Economics", "Civics", "IT", "Sport", "Art"];
       } else if (g === '11' || g === '12') {
         if (s === 'A' || s === 'B') {
-          // Natural Science Stream Official Subjects
           subjects = ["Physics", "Mathematics", "Biology", "Chemistry", "English", "IT", "Amharic", "Agriculture"];
         } else {
-          // Social Science Stream Official Subjects
           subjects = ["Geography", "History", "Economics", "Mathematics", "English", "IT", "Amharic", "Civics"];
         }
       } else {
@@ -1136,22 +1152,22 @@
       }
 
       container.innerHTML = subjects.map(sub => `
-        <button type="button" onclick="setSubjectPreset('${sub}')" class="px-2.5 py-1 bg-indigo-50 dark:bg-indigo-950/70 hover:bg-indigo-100 dark:hover:bg-indigo-900 text-indigo-700 dark:text-indigo-300 rounded-lg text-xs font-semibold border border-indigo-200 dark:border-indigo-800 transition">
+        <button type="button" onclick="setDashSubjectPreset('${sub}')" class="px-2.5 py-1 bg-indigo-50 dark:bg-indigo-950/70 hover:bg-indigo-100 dark:hover:bg-indigo-900 text-indigo-700 dark:text-indigo-300 rounded-lg text-xs font-semibold border border-indigo-200 dark:border-indigo-800 transition">
           + ${sub}
         </button>
       `).join('');
     }
 
-    function setSubjectPreset(subjectName) {
-      document.getElementById("newSubjectName").value = subjectName;
-      document.getElementById("newSubjectScore").focus();
+    function setDashSubjectPreset(subjectName) {
+      document.getElementById("dashNewSubjectName").value = subjectName;
+      document.getElementById("dashNewSubjectScore").focus();
     }
 
-    /* API - UPDATE STUDENT PHONE & PHOTO */
-    async function handleUpdateStudentDetails() {
+    /* API - UPDATE STUDENT PHONE & PHOTO FROM DASHBOARD */
+    async function handleDashUpdateStudentDetails() {
       if (!selectedStudent) return;
-      const newPhone = document.getElementById("editPhoneInput").value.trim();
-      const newPhoto = document.getElementById("editPhotoUrlInput").value.trim();
+      const newPhone = document.getElementById("dashEditPhoneInput").value.trim();
+      const newPhoto = document.getElementById("dashEditPhotoUrlInput").value.trim();
       try {
         await fetch(`${API_BASE_URL}/students/${selectedStudent._id}`, {
           method: 'PUT',
@@ -1160,25 +1176,25 @@
         });
         selectedStudent.phone = newPhone;
         selectedStudent.photo = newPhoto;
-        document.getElementById("editorAvatarPreview").innerHTML = getAvatarHTML(selectedStudent, "w-12 h-12");
+        document.getElementById("studentAvatarContainer").innerHTML = getAvatarHTML(selectedStudent, "w-16 h-16 sm:w-20 sm:h-20");
         const idx = studentsCache.findIndex(s => s._id === selectedStudent._id);
         if(idx !== -1) {
           studentsCache[idx].phone = newPhone;
           studentsCache[idx].photo = newPhoto;
         }
-        renderFilteredStudentsDirectory();
+        renderStudentDashboard(selectedStudent);
         alert("Student contact & photo updated successfully!");
       } catch (err) {
         selectedStudent.phone = newPhone;
         selectedStudent.photo = newPhoto;
         alert("Details updated locally!");
-        renderFilteredStudentsDirectory();
+        renderStudentDashboard(selectedStudent);
       }
     }
 
-    /* RENDER SUBJECT STATES ONE-BY-ONE IN TEACHER EDITOR */
-    function renderAdminGradesTable(results) {
-      const tbody = document.getElementById("adminGradesBody");
+    /* RENDER SUBJECT STATES IN TEACHER DASHBOARD EDITOR */
+    function renderDashAdminGradesTable(results) {
+      const tbody = document.getElementById("dashAdminGradesBody");
       tbody.innerHTML = "";
       if (!results || results.length === 0) {
         tbody.innerHTML = `<tr><td colspan="4" class="p-6 text-center text-slate-400">No subject grades assigned to this student yet.</td></tr>`;
@@ -1190,19 +1206,19 @@
             <td class="p-3 font-medium">${item.subject}</td>
             <td class="p-3 font-bold">${item.score}/100</td>
             <td class="p-3">
-              <span class="px-2.5 py-1 rounded-full text-xs font-bold ${isPass ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'}">
+              <span class="px-2.5 py-1 rounded-full text-xs font-bold ${isPass ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' : 'bg-red-100 text-red-700 dark:bg-red-950/30 dark:text-red-400'}">
                 ${isPass ? 'PASS' : 'FAIL'}
               </span>
             </td>
             <td class="p-3 text-center">
-              <button type="button" class="px-2.5 py-1 bg-red-50 text-red-600 dark:bg-red-950/50 dark:text-red-400 hover:bg-red-100 rounded text-xs font-semibold transition" onclick="event.stopPropagation(); deleteGradeApi('${item._id}')">Remove</button>
+              <button type="button" class="px-2.5 py-1 bg-red-50 text-red-600 dark:bg-red-950/50 dark:text-red-400 hover:bg-red-100 rounded text-xs font-semibold transition" onclick="event.stopPropagation(); deleteDashGradeApi('${item._id}')">Remove</button>
             </td>
           </tr>`;
       });
     }
 
-    /* API - GRADES (ADD & DELETE) */
-    async function handleAddOrUpdateGrade(e) {
+    /* API - GRADES (ADD & DELETE) FROM DASHBOARD */
+    async function handleDashAddOrUpdateGrade(e) {
       e.preventDefault();
       if (!selectedStudent) return;
       try {
@@ -1210,24 +1226,24 @@
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ 
-            subject: document.getElementById("newSubjectName").value.trim(), 
-            score: parseInt(document.getElementById("newSubjectScore").value) 
+            subject: document.getElementById("dashNewSubjectName").value.trim(), 
+            score: parseInt(document.getElementById("dashNewSubjectScore").value) 
           })
         });
         const data = await response.json();
         if (!response.ok) throw new Error(data.message);
         const updatedGrades = data.results || data.grades || [];
         selectedStudent.results = updatedGrades;
-        renderAdminGradesTable(updatedGrades);
+        renderDashAdminGradesTable(updatedGrades);
+        renderStudentDashboard(selectedStudent);
         const idx = studentsCache.findIndex(s => s._id === selectedStudent._id);
         if(idx !== -1) studentsCache[idx].results = updatedGrades;
-        renderFilteredStudentsDirectory();
-        document.getElementById("newSubjectName").value = "";
-        document.getElementById("newSubjectScore").value = "";
+        document.getElementById("dashNewSubjectName").value = "";
+        document.getElementById("dashNewSubjectScore").value = "";
       } catch (err) { alert("Save failed: " + err.message); }
     }
 
-    async function deleteGradeApi(subjectId) {
+    async function deleteDashGradeApi(subjectId) {
       if (!selectedStudent || !confirm("Remove this grade?")) return;
       try {
         const response = await fetch(`${API_BASE_URL}/students/${selectedStudent._id}/grades/${subjectId}`, { method: 'DELETE' });
@@ -1235,10 +1251,10 @@
         if (!response.ok) throw new Error(data.message);
         const updatedGrades = data.results || data.grades || [];
         selectedStudent.results = updatedGrades;
-        renderAdminGradesTable(updatedGrades);
+        renderDashAdminGradesTable(updatedGrades);
+        renderStudentDashboard(selectedStudent);
         const idx = studentsCache.findIndex(s => s._id === selectedStudent._id);
         if(idx !== -1) studentsCache[idx].results = updatedGrades;
-        renderFilteredStudentsDirectory();
       } catch (err) { alert("Delete failed: " + err.message); }
     }
 
@@ -1361,8 +1377,9 @@
       document.getElementById("teacherLoginForm").reset();
       document.getElementById("studentDashboardCard").classList.add("hidden");
       document.getElementById("teacherDashboardCard").classList.add("hidden");
-      document.getElementById("editorSection").classList.add("hidden");
       document.getElementById("studentSettingsView").classList.add("hidden");
+      document.getElementById("teacherBackBtn").classList.add("hidden");
+      document.getElementById("teacherDashboardGradeSection").classList.add("hidden");
       document.getElementById("studentResultsView").classList.remove("hidden");
       document.getElementById("loginCard").classList.remove("hidden");
       document.getElementById("logoutBtn").classList.add("hidden");
