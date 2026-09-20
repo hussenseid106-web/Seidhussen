@@ -249,10 +249,13 @@
         </form>
       </div>
 
-      <!-- TEACHER GRADE MANAGEMENT SECTION (Visible only when teacher views student dashboard) -->
+      <!-- TEACHER GRADE MANAGEMENT SECTION (Table Form Editor) -->
       <div id="teacherDashboardGradeSection" class="hidden no-print bg-indigo-50/50 dark:bg-slate-900 border-2 border-indigo-500 dark:border-indigo-600 rounded-2xl p-5 sm:p-6 shadow-md space-y-5 mt-6 transition-all duration-300">
         <div class="flex justify-between items-center border-b border-indigo-200 dark:border-slate-800 pb-3">
-          <h3 class="font-bold text-base text-slate-900 dark:text-white">Teacher Management & Grade Editor</h3>
+          <div>
+            <h3 class="font-bold text-base text-slate-900 dark:text-white">Teacher Grade Editor (Table Form)</h3>
+            <p class="text-xs text-slate-500 dark:text-slate-400">Edit scores directly in the table for each curriculum subject</p>
+          </div>
           <span id="teacherEditorStreamBadge" class="text-[10px] uppercase tracking-wider font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-100 dark:bg-indigo-950/60 px-2 py-0.5 rounded">Stream</span>
         </div>
 
@@ -271,17 +274,17 @@
           </div>
         </div>
 
-        <!-- Subject States Table -->
+        <!-- Subject States Table Form -->
         <div class="space-y-2">
-          <h4 class="text-xs font-bold text-slate-500 uppercase tracking-wider">Subject States & Scores Breakdown</h4>
+          <h4 class="text-xs font-bold text-slate-500 uppercase tracking-wider">Curriculum Subjects & Scores Table</h4>
           <div class="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
-            <table class="w-full text-left border-collapse min-w-[350px]">
+            <table class="w-full text-left border-collapse min-w-[450px]">
               <thead>
                 <tr class="bg-slate-50 dark:bg-slate-800/50 text-slate-400 text-xs uppercase tracking-wider font-semibold">
-                  <th class="p-3">Subject</th>
+                  <th class="p-3">Subject Name</th>
                   <th class="p-3">Score (0-100)</th>
-                  <th class="p-3">State</th>
-                  <th class="p-3 text-center">Action</th>
+                  <th class="p-3">Status</th>
+                  <th class="p-3 text-right">Action</th>
                 </tr>
               </thead>
               <tbody id="dashAdminGradesBody" class="divide-y divide-slate-200 dark:divide-slate-800 text-sm"></tbody>
@@ -289,17 +292,16 @@
           </div>
         </div>
 
-        <!-- Permanent Subject Quick Presets -->
-        <div class="space-y-1.5 pt-1">
-          <label class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider">Quick Select Curriculum Subjects (Permanent Presets):</label>
-          <div id="dashSubjectPresetsContainer" class="flex flex-wrap gap-1.5"></div>
+        <!-- Add Custom Subject Form -->
+        <div class="bg-white dark:bg-slate-800/60 p-4 rounded-xl border border-slate-200 dark:border-slate-700 space-y-2">
+          <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider">Add Custom Subject</label>
+          <div class="flex flex-col sm:flex-row gap-2">
+            <input type="text" id="dashCustomSubjectName" placeholder="Subject Name (e.g. Additional Mathematics)" class="flex-1 px-3.5 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-transparent text-xs focus:ring-2 focus:ring-indigo-600 focus:outline-none">
+            <input type="number" id="dashCustomSubjectScore" min="0" max="100" placeholder="Score (0-100)" class="w-full sm:w-32 px-3.5 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-transparent text-xs focus:ring-2 focus:ring-indigo-600 focus:outline-none">
+            <button type="button" onclick="addCustomSubject()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold transition shadow-xs">Add Subject</button>
+          </div>
         </div>
 
-        <form onsubmit="handleDashAddOrUpdateGrade(event)" class="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
-          <input type="text" id="dashNewSubjectName" placeholder="Subject Name (e.g. Mathematics)" required class="px-3.5 py-2.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm focus:ring-2 focus:ring-indigo-600 focus:outline-none">
-          <input type="number" id="dashNewSubjectScore" min="0" max="100" placeholder="Score (0-100)" required class="px-3.5 py-2.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm focus:ring-2 focus:ring-indigo-600 focus:outline-none">
-          <button type="submit" class="py-2.5 bg-indigo-600 hover:bg-indigo-700 active:scale-[0.99] text-white font-semibold rounded-lg text-xs shadow transition">Add / Update Score</button>
-        </form>
       </div>
 
     </div>
@@ -366,7 +368,7 @@
         <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
             <h3 class="font-bold text-base">Students Directory, Passwords, Totals & Ranks</h3>
-            <p class="text-xs text-slate-500 dark:text-slate-400">View student passwords, totals, section/grade ranks, and stream categories</p>
+            <p class="text-xs text-slate-500 dark:text-slate-400">Click any student row to open their full dashboard and edit grades in table form</p>
           </div>
           <div class="flex items-center gap-2 w-full md:w-auto">
             <button onclick="togglePasswordsVisibility()" id="togglePasswordsBtn" class="px-3.5 py-2 border border-slate-300 dark:border-slate-700 rounded-lg text-xs font-semibold hover:bg-slate-100 dark:hover:bg-slate-800 transition shadow-xs">👁️ Show Passwords</button>
@@ -1098,7 +1100,7 @@
       renderFilteredStudentsDirectory();
     }
 
-    /* CLICK STUDENT ROW IN TEACHER PORTAL -> SHOW STUDENT DASHBOARD WITH TEACHER EDIT TOOLS */
+    /* CLICK STUDENT ROW IN TEACHER PORTAL -> SHOW STUDENT DASHBOARD WITH TEACHER TABLE FORM EDITOR */
     function selectStudentForEditing(id) {
       selectedStudent = studentsCache.find(s => s._id === id);
       if (!selectedStudent) return;
@@ -1113,8 +1115,7 @@
         document.getElementById("teacherDashboardGradeSection").classList.remove("hidden");
 
         renderStudentDashboard(selectedStudent);
-        renderDashAdminGradesTable(selectedStudent.results || selectedStudent.grades || []);
-        renderDashSubjectPresets(selectedStudent);
+        renderDashAdminGradesTable(selectedStudent);
         
         document.getElementById("dashEditPhoneInput").value = selectedStudent.phone || selectedStudent.phoneNumber || "";
         document.getElementById("dashEditPhotoUrlInput").value = selectedStudent.photo || selectedStudent.photoUrl || "";
@@ -1131,36 +1132,128 @@
       renderFilteredStudentsDirectory();
     }
 
-    /* PERMANENT SUBJECT PRESETS MATCHING OFFICIAL CERTIFICATE CURRICULUM */
-    function renderDashSubjectPresets(student) {
-      const container = document.getElementById("dashSubjectPresetsContainer");
-      if (!container) return;
+    /* RENDER SUBJECTS IN TABLE FORM FOR TEACHER EDITION */
+    function renderDashAdminGradesTable(student) {
+      const tbody = document.getElementById("dashAdminGradesBody");
       const g = String(student.grade || '9');
       const s = String(student.section || 'A').toUpperCase();
-      let subjects = [];
+      let standardSubjects = [];
 
       if (g === '9' || g === '10') {
-        subjects = ["Amharic", "English", "Mathematics", "Physics", "Chemistry", "Biology", "Geography", "History", "Economics", "Civics", "IT", "Sport", "Art"];
+        standardSubjects = ["Amharic", "English", "Mathematics", "Physics", "Chemistry", "Biology", "Geography", "History", "Economics", "Civics", "IT", "Sport", "Art"];
       } else if (g === '11' || g === '12') {
         if (s === 'A' || s === 'B') {
-          subjects = ["Physics", "Mathematics", "Biology", "Chemistry", "English", "IT", "Amharic", "Agriculture"];
+          standardSubjects = ["Physics", "Mathematics", "Biology", "Chemistry", "English", "IT", "Amharic", "Agriculture"];
         } else {
-          subjects = ["Geography", "History", "Economics", "Mathematics", "English", "IT", "Amharic", "Civics"];
+          standardSubjects = ["Geography", "History", "Economics", "Mathematics", "English", "IT", "Amharic", "Civics"];
         }
       } else {
-        subjects = ["Amharic", "English", "Mathematics", "Physics", "Chemistry", "Biology"];
+        standardSubjects = ["Amharic", "English", "Mathematics", "Physics", "Chemistry", "Biology"];
       }
 
-      container.innerHTML = subjects.map(sub => `
-        <button type="button" onclick="setDashSubjectPreset('${sub}')" class="px-2.5 py-1 bg-indigo-50 dark:bg-indigo-950/70 hover:bg-indigo-100 dark:hover:bg-indigo-900 text-indigo-700 dark:text-indigo-300 rounded-lg text-xs font-semibold border border-indigo-200 dark:border-indigo-800 transition">
-          + ${sub}
-        </button>
-      `).join('');
+      const existingGrades = student.results || student.grades || [];
+      const gradeMap = {};
+      existingGrades.forEach(item => {
+        gradeMap[item.subject] = { score: item.score, _id: item._id };
+      });
+
+      const allSubjectsSet = new Set([...standardSubjects, ...existingGrades.map(item => item.subject)]);
+      const allSubjects = Array.from(allSubjectsSet);
+
+      tbody.innerHTML = "";
+      allSubjects.forEach(sub => {
+        const gradeData = gradeMap[sub];
+        const hasScore = gradeData !== undefined;
+        const scoreVal = hasScore ? gradeData.score : '';
+        const isPass = hasScore && scoreVal >= 50;
+
+        tbody.innerHTML += `
+          <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition">
+            <td class="p-3 font-semibold text-slate-900 dark:text-white">${sub}</td>
+            <td class="p-3">
+              <input type="number" id="score_input_${sub.replace(/\s+/g, '_')}" min="0" max="100" value="${scoreVal}" placeholder="0-100" class="w-28 px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm font-bold focus:ring-2 focus:ring-indigo-600 focus:outline-none">
+            </td>
+            <td class="p-3">
+              <span class="px-2.5 py-1 rounded-full text-xs font-bold ${!hasScore ? 'bg-slate-100 text-slate-400 dark:bg-slate-800' : isPass ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' : 'bg-red-100 text-red-700 dark:bg-red-950/30 dark:text-red-400'}">
+                ${!hasScore ? 'Not Graded' : isPass ? 'PASS' : 'FAIL'}
+              </span>
+            </td>
+            <td class="p-3 text-right">
+              <button type="button" onclick="saveSubjectScore('${sub}')" class="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold shadow-xs transition">Save Score</button>
+            </td>
+          </tr>
+        `;
+      });
     }
 
-    function setDashSubjectPreset(subjectName) {
-      document.getElementById("dashNewSubjectName").value = subjectName;
-      document.getElementById("dashNewSubjectScore").focus();
+    /* API - SAVE SUBJECT SCORE FROM TABLE FORM */
+    async function saveSubjectScore(subjectName) {
+      if (!selectedStudent) return;
+      const inputId = `score_input_${subjectName.replace(/\s+/g, '_')}`;
+      const scoreVal = document.getElementById(inputId).value;
+      if (scoreVal === '' || isNaN(scoreVal)) {
+        alert("Please enter a valid score between 0 and 100.");
+        return;
+      }
+      const score = parseInt(scoreVal);
+      if (score < 0 || score > 100) {
+        alert("Score must be between 0 and 100.");
+        return;
+      }
+
+      try {
+        const response = await fetch(`${API_BASE_URL}/students/${selectedStudent._id}/grades`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ subject: subjectName, score })
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message);
+        
+        const updatedGrades = data.results || data.grades || [];
+        selectedStudent.results = updatedGrades;
+        renderStudentDashboard(selectedStudent);
+        renderDashAdminGradesTable(selectedStudent);
+        
+        const idx = studentsCache.findIndex(s => s._id === selectedStudent._id);
+        if(idx !== -1) studentsCache[idx].results = updatedGrades;
+      } catch (err) {
+        alert("Failed to save score: " + err.message);
+      }
+    }
+
+    /* API - ADD CUSTOM SUBJECT */
+    async function addCustomSubject() {
+      if (!selectedStudent) return;
+      const name = document.getElementById("dashCustomSubjectName").value.trim();
+      const scoreVal = document.getElementById("dashCustomSubjectScore").value;
+      if (!name || scoreVal === '') {
+        alert("Please enter both subject name and score.");
+        return;
+      }
+      const score = parseInt(scoreVal);
+      try {
+        const response = await fetch(`${API_BASE_URL}/students/${selectedStudent._id}/grades`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ subject: name, score })
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message);
+        
+        const updatedGrades = data.results || data.grades || [];
+        selectedStudent.results = updatedGrades;
+        renderStudentDashboard(selectedStudent);
+        renderDashAdminGradesTable(selectedStudent);
+        
+        const idx = studentsCache.findIndex(s => s._id === selectedStudent._id);
+        if(idx !== -1) studentsCache[idx].results = updatedGrades;
+        
+        document.getElementById("dashCustomSubjectName").value = "";
+        document.getElementById("dashCustomSubjectScore").value = "";
+      } catch (err) {
+        alert("Failed to add subject: " + err.message);
+      }
     }
 
     /* API - UPDATE STUDENT PHONE & PHOTO FROM DASHBOARD */
@@ -1190,72 +1283,6 @@
         alert("Details updated locally!");
         renderStudentDashboard(selectedStudent);
       }
-    }
-
-    /* RENDER SUBJECT STATES IN TEACHER DASHBOARD EDITOR */
-    function renderDashAdminGradesTable(results) {
-      const tbody = document.getElementById("dashAdminGradesBody");
-      tbody.innerHTML = "";
-      if (!results || results.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="4" class="p-6 text-center text-slate-400">No subject grades assigned to this student yet.</td></tr>`;
-        return;
-      }
-      results.forEach(item => {
-        const isPass = (Number(item.score) || 0) >= 50;
-        tbody.innerHTML += `<tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition">
-            <td class="p-3 font-medium">${item.subject}</td>
-            <td class="p-3 font-bold">${item.score}/100</td>
-            <td class="p-3">
-              <span class="px-2.5 py-1 rounded-full text-xs font-bold ${isPass ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' : 'bg-red-100 text-red-700 dark:bg-red-950/30 dark:text-red-400'}">
-                ${isPass ? 'PASS' : 'FAIL'}
-              </span>
-            </td>
-            <td class="p-3 text-center">
-              <button type="button" class="px-2.5 py-1 bg-red-50 text-red-600 dark:bg-red-950/50 dark:text-red-400 hover:bg-red-100 rounded text-xs font-semibold transition" onclick="event.stopPropagation(); deleteDashGradeApi('${item._id}')">Remove</button>
-            </td>
-          </tr>`;
-      });
-    }
-
-    /* API - GRADES (ADD & DELETE) FROM DASHBOARD */
-    async function handleDashAddOrUpdateGrade(e) {
-      e.preventDefault();
-      if (!selectedStudent) return;
-      try {
-        const response = await fetch(`${API_BASE_URL}/students/${selectedStudent._id}/grades`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ 
-            subject: document.getElementById("dashNewSubjectName").value.trim(), 
-            score: parseInt(document.getElementById("dashNewSubjectScore").value) 
-          })
-        });
-        const data = await response.json();
-        if (!response.ok) throw new Error(data.message);
-        const updatedGrades = data.results || data.grades || [];
-        selectedStudent.results = updatedGrades;
-        renderDashAdminGradesTable(updatedGrades);
-        renderStudentDashboard(selectedStudent);
-        const idx = studentsCache.findIndex(s => s._id === selectedStudent._id);
-        if(idx !== -1) studentsCache[idx].results = updatedGrades;
-        document.getElementById("dashNewSubjectName").value = "";
-        document.getElementById("dashNewSubjectScore").value = "";
-      } catch (err) { alert("Save failed: " + err.message); }
-    }
-
-    async function deleteDashGradeApi(subjectId) {
-      if (!selectedStudent || !confirm("Remove this grade?")) return;
-      try {
-        const response = await fetch(`${API_BASE_URL}/students/${selectedStudent._id}/grades/${subjectId}`, { method: 'DELETE' });
-        const data = await response.json();
-        if (!response.ok) throw new Error(data.message);
-        const updatedGrades = data.results || data.grades || [];
-        selectedStudent.results = updatedGrades;
-        renderDashAdminGradesTable(updatedGrades);
-        renderStudentDashboard(selectedStudent);
-        const idx = studentsCache.findIndex(s => s._id === selectedStudent._id);
-        if(idx !== -1) studentsCache[idx].results = updatedGrades;
-      } catch (err) { alert("Delete failed: " + err.message); }
     }
 
     /* API - REGISTER SINGLE STUDENT */
