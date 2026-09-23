@@ -69,12 +69,12 @@ const teacherSchema = new mongoose.Schema({
   password: { type: String, required: true },
   fullName: { type: String, default: '' },
   photo: { type: String, default: '' },
-  isAdmin: { type: Boolean, default: false }, // true for Super Admin, false for restricted teachers
+  isAdmin: { type: Boolean, default: false }, 
   assignments: [
     {
       subject: { type: String, required: true },
-      grades: [{ type: String }],    // e.g. ["9", "11"]
-      sections: [{ type: String }]   // e.g. ["A", "D", "N"]
+      grades: [{ type: String }],
+      sections: [{ type: String }]
     }
   ]
 });
@@ -83,14 +83,14 @@ const Student = mongoose.model('Student', studentSchema);
 const Teacher = mongoose.model('Teacher', teacherSchema);
 
 // ==========================================
-// AUTHENTICATION ROUTES
+// AUTHENTICATION & TEACHER ROUTES
 // ==========================================
 
 // 1. Student Login
 app.post('/api/auth/student-login', async (req, res) => {
   try {
     const { username, password } = req.body;
-    const student = await Student.findOne({ username });
+    const student = await Student.findOne({ username: { $regex: new RegExp(`^${username}$`, 'i') } });
     if (!student || student.password !== password) {
       return res.status(401).json({ message: "Invalid username or password" });
     }
@@ -100,39 +100,30 @@ app.post('/api/auth/student-login', async (req, res) => {
   }
 });
 
-// 2. Admin Login
-app.post('/api/auth/teacher-login', async (req, res) => {
+// 2. Universal Teacher / Portal Login Handler (Supports multiple endpoint aliases)
+const handleTeacherLogin = async (req, res) => {
   try {
     const { username, password } = req.body;
-    const teacher = await Teacher.findOne({ username });
-    if (!teacher || teacher.password !== password) {
-      return res.status(401).json({ message: "Invalid admin credentials" });
-    }
-    res.json({ token: "sample-admin-token", teacher });
-  } catch (err) {
-    res.status(500).json({ message: "Server error", error: err.message });
-  }
-});
-
-// 3. Teacher Portal Login (Restricted Teacher)
-app.post('/api/auth/portal-teacher-login', async (req, res) => {
-  try {
-    const { username, password } = req.body;
-    const teacher = await Teacher.findOne({ username });
+    const teacher = await Teacher.findOne({ username: { $regex: new RegExp(`^${username}$`, 'i') } });
+    
     if (!teacher || teacher.password !== password) {
       return res.status(401).json({ message: "Invalid teacher username or password" });
     }
-    res.json({ token: "sample-portal-teacher-token", teacher });
+    res.json({ token: "sample-teacher-token", teacher, success: true });
   } catch (err) {
     res.status(500).json({ message: "Server error", error: err.message });
   }
-});
+};
 
-// 4. Register a new teacher with specific subject, grade & section assignments
+app.post('/api/auth/teacher-login', handleTeacherLogin);
+app.post('/api/auth/portal-teacher-login', handleTeacherLogin);
+app.post('/api/teacher/login', handleTeacherLogin);
+
+// 3. Register a new teacher
 app.post('/api/auth/register-teacher', async (req, res) => {
   try {
     const { username, password, fullName, photo, assignments, isAdmin } = req.body;
-    const existingTeacher = await Teacher.findOne({ username });
+    const existingTeacher = await Teacher.findOne({ username: { $regex: new RegExp(`^${username}$`, 'i') } });
     if (existingTeacher) {
       return res.status(400).json({ message: "Teacher username already exists." });
     }
@@ -151,7 +142,7 @@ app.post('/api/auth/register-teacher', async (req, res) => {
   }
 });
 
-// 5. Update Teacher Profile or Assignments
+// 4. Update Teacher Profile or Assignments
 app.put('/api/teachers/:id', async (req, res) => {
   try {
     const { fullName, password, photo, assignments } = req.body;
@@ -170,7 +161,7 @@ app.put('/api/teachers/:id', async (req, res) => {
   }
 });
 
-// 6. Get all teachers
+// 5. Get all teachers
 app.get('/api/teachers', async (req, res) => {
   try {
     const teachers = await Teacher.find();
@@ -180,18 +171,34 @@ app.get('/api/teachers', async (req, res) => {
   }
 });
 
-// 7. Delete Teacher Account
-app.delete('/api/teachers/:id', async (req, res) => {
+// 6. Flexible Delete Teacher Account (Supports MongoDB ID OR Username, protects Admin)
+app.delete('/api/teachers/:idOrUsername', async (req, res) => {
   try {
-    const deleted = await Teacher.findByIdAndDelete(req.params.id);
-    if (!deleted) return res.status(404).json({ message: "Teacher not found" });
-    res.json({ message: "Teacher deleted successfully" });
+    const identifier = req.params.idOrUsername;
+    
+    // Check if identifier is a valid MongoDB ObjectId or a username string
+    let query = mongoose.Types.ObjectId.isValid(identifier) 
+      ? { _id: identifier } 
+      : { username: { $regex: new RegExp(`^${identifier}$`, 'i') } };
+
+    const teacherToDelete = await Teacher.findOne(query);
+    if (!teacherToDelete) {
+      return res.status(404).json({ message: "Teacher not found" });
+    }
+
+    // Protect the primary Administrator account from deletion
+    if (teacherToDelete.username.toLowerCase() === 'admin' || teacherToDelete.isAdmin) {
+      return res.status(403).json({ message: "Action denied: Cannot delete the administrator account!" });
+    }
+
+    await Teacher.findByIdAndDelete(teacherToDelete._id);
+    res.json({ success: true, message: "Teacher deleted successfully" });
   } catch (err) {
     res.status(500).json({ message: "Server error", error: err.message });
   }
 });
 
-// 8. Change Admin Password
+// 7. Change Admin Password
 app.post('/api/auth/change-password', async (req, res) => {
   try {
     const { oldPassword, newPassword } = req.body;
@@ -226,7 +233,7 @@ app.get('/api/students', async (req, res) => {
 app.post('/api/students', async (req, res) => {
   try {
     const { username, fullName, password, grade, section, phone, photo, isFirstLogin } = req.body;
-    const existing = await Student.findOne({ username });
+    const existing = await Student.findOne({ username: { $regex: new RegExp(`^${username}$`, 'i') } });
     if (existing) {
       return res.status(400).json({ message: "Student username already exists" });
     }
@@ -308,7 +315,7 @@ app.put('/api/students/:id/grades', async (req, res) => {
     await student.save();
     res.json(student);
   } catch (err) {
-    res.status(500).json({ message: "Server error", error: err.message });
+    res.status(500).json({ message: "Server server error", error: err.message });
   }
 });
 
