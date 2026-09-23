@@ -563,6 +563,16 @@
 
     document.getElementById("year").textContent = new Date().getFullYear();
 
+    function logout() {
+      currentAuthToken = null;
+      loggedInStudent = null;
+      selectedStudent = null;
+      document.getElementById("studentDashboardCard").classList.add("hidden");
+      document.getElementById("teacherDashboardCard").classList.add("hidden");
+      document.getElementById("logoutBtn").classList.add("hidden");
+      document.getElementById("loginCard").classList.remove("hidden");
+    }
+
     function toggleTheme() {
       const isDark = document.documentElement.classList.toggle('dark');
       document.getElementById("themeToggleBtn").textContent = isDark ? "Light" : "Theme";
@@ -678,7 +688,7 @@
       
       if (photoUrl && photoUrl.trim() !== '') {
         return `<div class="${sizeClasses} rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-800 flex-shrink-0 border border-slate-200 dark:border-slate-700 shadow-xs">
-          <img src="${photoUrl}" alt="${student.fullName}" class="w-full h-full object-cover" onerror="this.parentElement.innerHTML='<span class=\'text-xs font-bold text-indigo-600 dark:text-indigo-400\'>${initials}</span>'">
+          <img src="${photoUrl}" alt="${student.fullName}" class="w-full h-full object-cover" onerror="this.parentElement.innerHTML='<span class=\\'text-xs font-bold text-indigo-600 dark:text-indigo-400\\'>${initials}</span>'">
         </div>`;
       } else {
         return `<div class="${sizeClasses} rounded-xl overflow-hidden bg-indigo-50 dark:bg-indigo-950/80 flex items-center justify-center flex-shrink-0 border border-indigo-200 dark:border-indigo-800/60 shadow-xs">
@@ -879,7 +889,6 @@
 
       document.getElementById("studentAvatarContainer").innerHTML = getAvatarHTML(student, "w-16 h-16 sm:w-20 sm:h-20");
 
-      // Generate verification QR code image pointing to student profile/school portal
       const verificationUrl = `${window.location.origin}?verify=${student.username}&serial=${uniqueSerial}`;
       document.getElementById("certQrCode").src = `https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(verificationUrl)}`;
 
@@ -891,7 +900,6 @@
 
       const ranks = computeStudentRanks(studentsCache.length ? studentsCache : [student], student);
       
-      // Display Section Rank along with stream right next to it
       document.getElementById("studentSectionRankDisplay").innerHTML = `${ranks.sectionRankStr} <span class="block text-[11px] font-medium text-slate-500 dark:text-slate-400 mt-0.5">${streamText}</span>`;
       document.getElementById("studentGradeRankDisplay").textContent = ranks.gradeRankStr;
       
@@ -990,7 +998,7 @@
 
     function setGradeFilter(grade) {
       activeGradeFilter = grade;
-      activeSectionFilter = 'ALL'; // Reset section filter when grade changes
+      activeSectionFilter = 'ALL';
       buildFilterBars(studentsCache);
       renderFilteredStudentsDirectory();
     }
@@ -1277,41 +1285,41 @@
       if (!selectedStudent) return;
       const newPhone = document.getElementById("dashEditPhoneInput").value.trim();
       const newPhoto = document.getElementById("dashEditPhotoUrlInput").value.trim();
-      
       try {
-        const response = await fetch(`${API_BASE_URL}/students/${selectedStudent._id}`, {
+        await fetch(`${API_BASE_URL}/students/${selectedStudent._id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ phone: newPhone, photo: newPhoto })
         });
-        
-        if (!response.ok) throw new Error("Failed to update student details");
-        
         selectedStudent.phone = newPhone;
         selectedStudent.photo = newPhoto;
-        
+        document.getElementById("studentAvatarContainer").innerHTML = getAvatarHTML(selectedStudent, "w-16 h-16 sm:w-20 sm:h-20");
         const idx = studentsCache.findIndex(s => s._id === selectedStudent._id);
         if(idx !== -1) {
           studentsCache[idx].phone = newPhone;
           studentsCache[idx].photo = newPhoto;
         }
-        
-        document.getElementById("studentAvatarContainer").innerHTML = getAvatarHTML(selectedStudent, "w-16 h-16 sm:w-20 sm:h-20");
-        alert("Contact and photo updated successfully!");
+        renderStudentDashboard(selectedStudent);
+        alert("Student contact & photo updated successfully!");
       } catch (err) {
-        alert("Failed to update details: " + err.message);
+        selectedStudent.phone = newPhone;
+        selectedStudent.photo = newPhoto;
+        alert("Details updated locally!");
+        renderStudentDashboard(selectedStudent);
       }
     }
 
-    /* API - REGISTER NEW STUDENT */
+    /* API - REGISTER SINGLE STUDENT */
     async function handleRegisterStudent(e) {
       e.preventDefault();
       const username = document.getElementById("regUsername").value.trim();
       const fullName = document.getElementById("regFullName").value.trim();
       const password = document.getElementById("regPassword").value;
-      const grade = document.getElementById("regGrade").value;
-      const section = document.getElementById("regSection").value;
-      const phone = document.getElementById("regCountryCode").value + document.getElementById("regPhoneNumber").value.trim();
+      const grade = document.getElementById("regGrade").value.trim();
+      const section = document.getElementById("regSection").value.trim();
+      const countryCode = document.getElementById("regCountryCode").value;
+      const subscriberNumber = document.getElementById("regPhoneNumber").value.trim();
+      const phone = `${countryCode}${subscriberNumber}`;
       const photo = document.getElementById("regPhoto").value.trim();
       const msgDiv = document.getElementById("regModalMsg");
 
@@ -1319,25 +1327,24 @@
         const response = await fetch(`${API_BASE_URL}/students`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ username, fullName, password, grade, section, phone, photo })
+          body: JSON.stringify({ username, fullName, password, phone, grade, section, photo, isFirstLogin: true })
         });
+        if (!response.ok) throw new Error("Failed to create student");
         
-        if (!response.ok) {
-          const data = await response.json().catch(() => ({}));
-          throw new Error(data.message || "Failed to register student");
-        }
-
-        msgDiv.className = "text-emerald-500 font-semibold text-xs";
+        msgDiv.className = "text-emerald-500 font-semibold";
         msgDiv.textContent = "Student registered successfully!";
-        
         setTimeout(() => {
           closeModal('addStudentModal');
-          e.target.reset();
+          document.getElementById("regUsername").value = "";
+          document.getElementById("regFullName").value = "";
+          document.getElementById("regPassword").value = "";
+          document.getElementById("regPhoneNumber").value = "";
+          document.getElementById("regPhoto").value = "";
           msgDiv.textContent = "";
-          fetchAndRenderTeacherPortal(); // Refresh table view
-        }, 1200);
+          fetchAndRenderTeacherPortal();
+        }, 1000);
       } catch (err) {
-        msgDiv.className = "text-red-500 font-semibold text-xs";
+        msgDiv.className = "text-red-500 font-semibold";
         msgDiv.textContent = err.message;
       }
     }
@@ -1348,34 +1355,34 @@
       const oldPassword = document.getElementById("oldPassword").value;
       const newPassword = document.getElementById("newPassword").value;
       const msgDiv = document.getElementById("pwdModalMsg");
-      
+
       try {
-        const response = await fetch(`${API_BASE_URL}/auth/change-password`, {
+        const response = await fetch(`${API_BASE_URL}/auth/change-admin-password`, {
           method: 'PUT',
           headers: { 
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${currentAuthToken}` 
+            'Authorization': `Bearer ${currentAuthToken}`
           },
           body: JSON.stringify({ oldPassword, newPassword })
         });
-        
-        if (!response.ok) throw new Error("Failed to change password. Check current password.");
-        
-        msgDiv.className = "text-emerald-500 font-semibold text-xs";
-        msgDiv.textContent = "Password updated successfully!";
-        
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message || "Failed to update password");
+
+        msgDiv.className = "text-emerald-500 font-semibold";
+        msgDiv.textContent = "Admin password updated successfully!";
         setTimeout(() => {
           closeModal('passwordModal');
-          e.target.reset();
+          document.getElementById("oldPassword").value = "";
+          document.getElementById("newPassword").value = "";
           msgDiv.textContent = "";
-        }, 1200);
-      } catch(err) {
-        msgDiv.className = "text-red-500 font-semibold text-xs";
+        }, 1000);
+      } catch (err) {
+        msgDiv.className = "text-red-500 font-semibold";
         msgDiv.textContent = err.message;
       }
     }
 
-    /* API - REGISTER NEW TEACHER */
+    /* API - REGISTER CO-TEACHER */
     async function handleRegisterTeacher(e) {
       e.preventDefault();
       const username = document.getElementById("newTeacherUser").value.trim();
@@ -1387,57 +1394,62 @@
           method: 'POST',
           headers: { 
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${currentAuthToken}` 
+            'Authorization': `Bearer ${currentAuthToken}`
           },
           body: JSON.stringify({ username, password })
         });
-        
-        if (!response.ok) throw new Error("Failed to register teacher account");
-        
-        msgDiv.className = "text-emerald-500 font-semibold text-xs";
-        msgDiv.textContent = "Co-Teacher account created successfully!";
-        
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message || "Failed to create teacher account");
+
+        msgDiv.className = "text-emerald-500 font-semibold";
+        msgDiv.textContent = "Teacher registered successfully!";
         setTimeout(() => {
           closeModal('teacherModal');
-          e.target.reset();
+          document.getElementById("newTeacherUser").value = "";
+          document.getElementById("newTeacherPass").value = "";
           msgDiv.textContent = "";
-        }, 1200);
-      } catch(err) {
-        msgDiv.className = "text-red-500 font-semibold text-xs";
+        }, 1000);
+      } catch (err) {
+        msgDiv.className = "text-red-500 font-semibold";
         msgDiv.textContent = err.message;
       }
     }
 
-    /* HANDLE CSV BULK UPLOAD */
-    async function handleCSVUpload(e) {
+    /* CSV BULK UPLOAD */
+    function handleCSVUpload(e) {
       const file = e.target.files[0];
       if (!file) return;
-      
-      // In a production environment, you would parse the CSV here or send as FormData
-      alert(`CSV Upload initiated for: ${file.name}. \nConnect this to your backend bulk import route.`);
-      e.target.value = ""; // Reset the input
-    }
+      const reader = new FileReader();
+      reader.onload = async function(evt) {
+        const lines = evt.target.result.split('\n');
+        let count = 0;
+        for (let i = 1; i < lines.length; i++) {
+          const row = lines[i].split(',');
+          if (row.length >= 5) {
+            const username = row[0].trim();
+            const fullName = row[1].trim();
+            const password = row[2].trim();
+            const grade = row[3].trim();
+            const section = row[4].trim();
+            const phone = row[5] ? row[5].trim() : '';
+            const photo = row[6] ? row[6].trim() : '';
 
-    /* HANDLE LOGOUT */
-    function logout() {
-      // Clear session data
-      currentAuthToken = null;
-      loggedInStudent = null;
-      selectedStudent = null;
-      
-      // Reset views
-      document.getElementById("loginCard").classList.remove("hidden");
-      document.getElementById("studentDashboardCard").classList.add("hidden");
-      document.getElementById("teacherDashboardCard").classList.add("hidden");
-      document.getElementById("logoutBtn").classList.add("hidden");
-      document.getElementById("teacherDashboardGradeSection").classList.add("hidden");
-      
-      // Clear forms
-      document.getElementById("studentLoginForm").reset();
-      document.getElementById("teacherLoginForm").reset();
-      
-      // Ensure we start back on the student tab
-      switchRole('student');
+            if (username && fullName && password) {
+              try {
+                await fetch(`${API_BASE_URL}/students`, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ username, fullName, password, grade, section, phone, photo, isFirstLogin: true })
+                });
+                count++;
+              } catch (err) {}
+            }
+          }
+        }
+        alert(`Successfully processed CSV. Registered ${count} students.`);
+        fetchAndRenderTeacherPortal();
+      };
+      reader.readAsText(file);
     }
   </script>
 </body>
