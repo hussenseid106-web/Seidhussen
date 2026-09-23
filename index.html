@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Harbu Secondary School - Student & Admin Portal</title>
+  <title>Harbu Secondary School - Student & Teacher Portal</title>
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
@@ -253,7 +253,7 @@
       <div id="teacherDashboardGradeSection" class="hidden no-print bg-indigo-50/50 dark:bg-slate-900 border-2 border-indigo-500 dark:border-indigo-600 rounded-2xl p-5 sm:p-6 shadow-md space-y-5 mt-6 transition-all duration-300">
         <div class="flex justify-between items-center border-b border-indigo-200 dark:border-slate-800 pb-3">
           <div>
-            <h3 class="font-bold text-base text-slate-900 dark:text-white">Admin Grade Editor (Table Form)</h3>
+            <h3 class="font-bold text-base text-slate-900 dark:text-white">Teacher Grade Editor (Table Form)</h3>
             <p class="text-xs text-slate-500 dark:text-slate-400">Edit scores directly in the table for each curriculum subject</p>
           </div>
           <span id="teacherEditorStreamBadge" class="text-[10px] uppercase tracking-wider font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-100 dark:bg-indigo-950/60 px-2 py-0.5 rounded">Stream</span>
@@ -312,7 +312,7 @@
       <!-- Top Bar / Actions -->
       <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 sm:p-6 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h2 class="text-lg sm:text-xl font-bold">Admin Portal</h2>
+          <h2 class="text-lg sm:text-xl font-bold">Teacher Administration Portal</h2>
           <p class="text-xs text-slate-500 dark:text-slate-400">Grades 9–12 Curriculum & Stream Management (Natural & Social Science)</p>
         </div>
         <div class="flex flex-wrap gap-2 w-full md:w-auto">
@@ -358,7 +358,7 @@
       <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 sm:p-6 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4">
         <div>
           <h4 class="text-sm font-semibold">Bulk Import via CSV (Grades 9–12)</h4>
-          <p class="text-xs text-slate-500 dark:text-slate-400">Format: Username, FullName, Password, Grade(9-12), Section(A-Z), Phone, PhotoURL(optional)</p>
+          <p class="text-xs text-slate-500 dark:text-slate-400">Format: Username, FullName, Password, Grade(9-12), Section(A/B/C/D), Phone, PhotoURL(optional)</p>
         </div>
         <input type="file" id="csvFileInput" accept=".csv" onchange="handleCSVUpload(event)" class="w-full sm:w-auto text-xs file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-600 dark:file:bg-slate-800 dark:file:text-indigo-400 hover:file:bg-indigo-100 cursor-pointer">
       </div>
@@ -368,7 +368,7 @@
         <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
             <h3 class="font-bold text-base">Students Directory, Passwords, Totals & Ranks</h3>
-            <p class="text-xs text-slate-500 dark:text-slate-400">Student directory and management records</p>
+            <p class="text-xs text-slate-500 dark:text-slate-400">Click any student row to open their full dashboard and edit grades in table form</p>
           </div>
           <div class="flex items-center gap-2 w-full md:w-auto">
             <button onclick="togglePasswordsVisibility()" id="togglePasswordsBtn" class="px-3.5 py-2 border border-slate-300 dark:border-slate-700 rounded-lg text-xs font-semibold hover:bg-slate-100 dark:hover:bg-slate-800 transition shadow-xs">👁️ Show Passwords</button>
@@ -390,7 +390,7 @@
         
         <!-- Students Table Container -->
         <div class="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800 mt-4">
-          <table class="w-full text-left border-collapse min-w-[1050px]">
+          <table class="w-full text-left border-collapse min-w-[1150px]">
             <thead>
               <tr class="bg-slate-50 dark:bg-slate-800/50 text-slate-400 text-xs uppercase tracking-wider font-semibold border-b border-slate-200 dark:border-slate-800">
                 <th class="p-3.5">Student</th>
@@ -401,6 +401,7 @@
                 <th class="p-3.5">Grade Rank</th>
                 <th class="p-3.5">Total Score</th>
                 <th class="p-3.5">Average & Status</th>
+                <th class="p-3.5 text-right">Action</th>
               </tr>
             </thead>
             <tbody id="adminStudentsTableBody" class="divide-y divide-slate-200 dark:divide-slate-800 text-sm"></tbody>
@@ -452,7 +453,7 @@
             <input type="text" id="regPassword" placeholder="pass1234" required class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-transparent text-xs focus:outline-none focus:ring-2 focus:ring-indigo-600">
           </div>
           <div>
-            <label class="block text-xs font-semibold text-slate-500 mb-1">Grade (9-12) & Section</label>
+            <label class="block text-xs font-semibold text-slate-500 mb-1">Grade (9-12) & Section (A-D)</label>
             <div class="grid grid-cols-2 gap-2">
               <select id="regGrade" required onchange="updateRegSectionOptions()" class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs focus:outline-none">
                 <option value="9">Grade 9</option>
@@ -461,10 +462,10 @@
                 <option value="12">Grade 12</option>
               </select>
               <select id="regSection" required class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs focus:outline-none">
-                <option value="A" selected>Sec A (Natural Science)</option>
-                <option value="B">Sec B (Natural Science)</option>
-                <option value="C">Sec C (Social Science)</option>
-                <option value="D">Sec D (Social Science)</option>
+                <option value="A" selected>Sec A (Natural)</option>
+                <option value="B">Sec B (Natural)</option>
+                <option value="C">Sec C (Social)</option>
+                <option value="D">Sec D (Social)</option>
               </select>
             </div>
           </div>
@@ -605,20 +606,13 @@
     function updateRegSectionOptions() {
       const grade = document.getElementById("regGrade").value;
       const sectionSelect = document.getElementById("regSection");
-      if (grade === '9') {
-        let options = '';
-        for (let i = 0; i < 26; i++) {
-          const letter = String.fromCharCode(65 + i);
-          options += `<option value="${letter}">Section ${letter}</option>`;
-        }
-        sectionSelect.innerHTML = options;
-      } else if (grade === '10') {
-        let options = '';
-        for (let i = 0; i < 6; i++) {
-          const letter = String.fromCharCode(65 + i);
-          options += `<option value="${letter}">Section ${letter}</option>`;
-        }
-        sectionSelect.innerHTML = options;
+      if (grade === '9' || grade === '10') {
+        sectionSelect.innerHTML = `
+          <option value="A">Section A</option>
+          <option value="B">Section B</option>
+          <option value="C">Section C</option>
+          <option value="D">Section D</option>
+        `;
       } else {
         sectionSelect.innerHTML = `
           <option value="A">Sec A (Natural Science)</option>
@@ -967,28 +961,26 @@
       gradeBar.innerHTML = gradeHTML;
 
       const sectionBar = document.getElementById("sectionFilterBar");
-      let sectionsToShow = [];
+      let sectionsList = [];
+
       if (activeGradeFilter === '9') {
-        for (let i = 0; i < 26; i++) {
-          sectionsToShow.push(String.fromCharCode(65 + i));
-        }
+        sectionsList = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'];
       } else if (activeGradeFilter === '10') {
-        for (let i = 0; i < 6; i++) {
-          sectionsToShow.push(String.fromCharCode(65 + i));
-        }
+        sectionsList = ['A', 'B', 'C', 'D', 'E', 'F'];
       } else if (activeGradeFilter === '11' || activeGradeFilter === '12') {
-        sectionsToShow = ['A', 'B', 'C', 'D'];
+        sectionsList = ['A', 'B', 'C', 'D'];
       } else {
-        sectionsToShow = ['A', 'B', 'C', 'D'];
+        sectionsList = ['A', 'B', 'C', 'D'];
       }
 
       let sectionHTML = `<button onclick="setSectionFilter('ALL')" class="px-3 py-1.5 rounded-lg text-xs font-semibold transition ${activeSectionFilter === 'ALL' ? 'bg-indigo-600 text-white shadow' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200'}">All Sections</button>`;
-      sectionsToShow.forEach(sec => {
+      
+      sectionsList.forEach(sec => {
         const isActive = activeSectionFilter === sec;
         let secLabel = `Sec ${sec}`;
-        if ((activeGradeFilter === '11' || activeGradeFilter === '12' || activeGradeFilter === 'ALL') && (sec === 'A' || sec === 'B')) {
+        if ((activeGradeFilter === '11' || activeGradeFilter === '12') && (sec === 'A' || sec === 'B')) {
           secLabel += ` (Natural)`;
-        } else if ((activeGradeFilter === '11' || activeGradeFilter === '12' || activeGradeFilter === 'ALL') && (sec === 'C' || sec === 'D')) {
+        } else if ((activeGradeFilter === '11' || activeGradeFilter === '12') && (sec === 'C' || sec === 'D')) {
           secLabel += ` (Social)`;
         }
         sectionHTML += `<button onclick="setSectionFilter('${sec}')" class="px-3 py-1.5 rounded-lg text-xs font-semibold transition ${isActive ? 'bg-indigo-600 text-white shadow' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200'}">${secLabel}</button>`;
@@ -998,7 +990,7 @@
 
     function setGradeFilter(grade) {
       activeGradeFilter = grade;
-      activeSectionFilter = 'ALL';
+      activeSectionFilter = 'ALL'; // Reset section filter when grade changes
       buildFilterBars(studentsCache);
       renderFilteredStudentsDirectory();
     }
@@ -1034,7 +1026,7 @@
 
       tbody.innerHTML = "";
       if (!filtered || filtered.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="8" class="p-6 text-center text-slate-400">No students match the current filters.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="9" class="p-6 text-center text-slate-400">No students match the current filters.</td></tr>`;
         return;
       }
 
@@ -1043,12 +1035,13 @@
         const resultsCount = studentGrades.length;
         const stats = calculateStats(studentGrades);
         const ranks = computeStudentRanks(studentsCache, s);
+        const isSelected = selectedStudent && selectedStudent._id === s._id;
         const studentPhone = s.phone || s.phoneNumber || '+251911000000';
         const streamText = getStudentStream(s.grade, s.section);
         const rawPass = s.password || '••••••••';
         const displayPassword = showPasswordsPlain ? rawPass : '••••••••';
         
-        tbody.innerHTML += `<tr class="transition-all duration-150 hover:bg-indigo-50/50 dark:hover:bg-slate-800/60">
+        tbody.innerHTML += `<tr onclick="selectStudentForEditing('${s._id}')" class="cursor-pointer transition-all duration-150 ${isSelected ? 'bg-indigo-50/80 dark:bg-indigo-950/40 border-l-4 border-indigo-600' : 'hover:bg-indigo-50/50 dark:hover:bg-slate-800/60'}">
             <td class="p-3.5">
               <div class="flex items-center gap-3">
                 ${getAvatarHTML(s, "w-10 h-10")}
@@ -1078,6 +1071,9 @@
                 <span class="font-bold text-slate-900 dark:text-white text-xs">${resultsCount > 0 ? stats.avg + '%' : '--'}</span>
                 <span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${resultsCount === 0 ? 'bg-slate-100 text-slate-500' : stats.pass ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' : 'bg-red-100 text-red-700 dark:bg-red-950/30 dark:text-red-400'}">${resultsCount === 0 ? 'NO DATA' : stats.status}</span>
               </div>
+            </td>
+            <td class="p-3.5 text-right">
+              <span class="text-xs font-semibold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/80 px-2.5 py-1.5 rounded-lg inline-block shadow-xs">View Dashboard &rarr;</span>
             </td>
           </tr>`;
       });
@@ -1118,6 +1114,29 @@
 
     function filterStudentsDirectory() {
       renderFilteredStudentsDirectory();
+    }
+
+    /* CLICK STUDENT ROW IN TEACHER PORTAL -> SHOW STUDENT DASHBOARD WITH TEACHER TABLE FORM EDITOR */
+    function selectStudentForEditing(id) {
+      selectedStudent = studentsCache.find(s => s._id === id);
+      if (!selectedStudent) return;
+      
+      if (activeRole === 'teacher') {
+        document.getElementById("teacherDashboardCard").classList.add("hidden");
+        document.getElementById("studentDashboardCard").classList.remove("hidden");
+        document.getElementById("studentResultsView").classList.remove("hidden");
+        document.getElementById("studentSettingsView").classList.add("hidden");
+        document.getElementById("logoutBtn").classList.remove("hidden");
+        document.getElementById("teacherBackBtn").classList.remove("hidden");
+        document.getElementById("teacherDashboardGradeSection").classList.remove("hidden");
+
+        renderStudentDashboard(selectedStudent);
+        renderDashAdminGradesTable(selectedStudent);
+        
+        document.getElementById("dashEditPhoneInput").value = selectedStudent.phone || selectedStudent.phoneNumber || "";
+        document.getElementById("dashEditPhotoUrlInput").value = selectedStudent.photo || selectedStudent.photoUrl || "";
+        document.getElementById("teacherEditorStreamBadge").textContent = getStudentStream(selectedStudent.grade, selectedStudent.section);
+      }
     }
 
     function backToTeacherPortal() {
