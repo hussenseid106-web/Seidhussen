@@ -1002,12 +1002,10 @@
       const errorDiv = document.getElementById("teacherPortalLoginError");
 
       try {
-        // Fetch teachers list from backend or local cache
         const res = await fetch(`${API_BASE_URL}/teachers`).catch(() => null);
         if (res && res.ok) {
           teachersCache = await res.json();
         } else {
-          // Fallback demo mock teachers if backend teachers endpoint isn't set up yet
           teachersCache = [
             { username: 'ahmed', fullName: 'Ahmed Mohammed', password: '123', subject: 'Physics', assignments: '9:A,D,N; 11:A,B', photo: '' },
             { username: 'kebede', fullName: 'Kebede Tadesse', password: '234', subject: 'Mathematics', assignments: '10:B,C,D', photo: '' }
@@ -1021,7 +1019,6 @@
 
         loggedInTeacher = foundTeacher;
         
-        // Fetch students as well
         const studentRes = await fetch(`${API_BASE_URL}/students`);
         if (studentRes.ok) {
           studentsCache = await studentRes.json();
@@ -1054,8 +1051,8 @@
 
     /* CHECK IF TEACHER IS AUTHORIZED FOR A STUDENT'S GRADE & SECTION */
     function teacherIsAuthorizedForStudent(teacher, studentGrade, studentSection) {
-      if (!teacher || !teacher.assignments) return true; // default allow if no restriction
-      const assignmentsStr = teacher.assignments; // e.g. "9:A,D,N; 11:A,B"
+      if (!teacher || !teacher.assignments) return true;
+      const assignmentsStr = teacher.assignments;
       const parts = assignmentsStr.split(';');
       const gStr = String(studentGrade).trim();
       const sStr = String(studentSection).trim().toUpperCase();
@@ -1146,15 +1143,12 @@
 
     function renderTeacherPortalRestrictedGradesTable(student) {
       const tbody = document.getElementById("dashAdminGradesBody");
-      const authorizedSubject = (loggedInTeacher.subject || '').trim().toLowerCase();
-      
       const existingGrades = student.results || student.grades || [];
       const gradeMap = {};
       existingGrades.forEach(item => {
         gradeMap[item.subject] = { score: item.score, _id: item._id };
       });
 
-      // Show ONLY the teacher's authorized subject so they can ONLY edit that subject score!
       tbody.innerHTML = "";
       const sub = loggedInTeacher.subject || 'Physics';
       const gradeData = gradeMap[sub];
@@ -1310,7 +1304,7 @@
             <td class="p-3 sm:p-4 font-medium">${res.subject}</td>
             <td class="p-3 sm:p-4 font-bold">${res.score}/100</td>
             <td class="p-3 sm:p-4">${res.grade || '-'}</td>
-            <td class="p-3 sm:p-4"><span class="px-2.5 py-1 rounded-full text-xs font-bold ${isPass ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'}">${isPass ? 'PASS' : 'FAIL'}</span></td>
+            <td class="p-3 sm:p-4"><span class="px-2.5 py-1 rounded-full text-xs font-bold ${isPass ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' : 'bg-red-100 text-red-700 dark:bg-red-950/30 dark:text-red-400'}">${isPass ? 'PASS' : 'FAIL'}</span></td>
           </tr>`;
       });
     }
@@ -1674,11 +1668,16 @@
       if (!selectedStudent) return;
       const name = document.getElementById("dashCustomSubjectName").value.trim();
       const scoreVal = document.getElementById("dashCustomSubjectScore").value;
-      if (!name || scoreVal === '') {
-        alert("Please enter both subject name and score.");
+      if (!name || scoreVal === '' || isNaN(scoreVal)) {
+        alert("Please provide a valid subject name and score (0-100).");
         return;
       }
       const score = parseInt(scoreVal);
+      if (score < 0 || score > 100) {
+        alert("Score must be between 0 and 100.");
+        return;
+      }
+
       try {
         const response = await fetch(`${API_BASE_URL}/students/${selectedStudent._id}/grades`, {
           method: 'PUT',
@@ -1693,58 +1692,30 @@
         renderStudentDashboard(selectedStudent);
         if (activeRole === 'teacher') {
           renderDashAdminGradesTable(selectedStudent);
+        } else if (activeRole === 'teacherPortal') {
+          renderTeacherPortalRestrictedGradesTable(selectedStudent);
         }
-        
-        const idx = studentsCache.findIndex(s => s._id === selectedStudent._id);
-        if(idx !== -1) studentsCache[idx].results = updatedGrades;
         
         document.getElementById("dashCustomSubjectName").value = "";
         document.getElementById("dashCustomSubjectScore").value = "";
-      } catch (err) {
-        alert("Failed to add subject: " + err.message);
-      }
-    }
-
-    /* API - UPDATE STUDENT PHONE & PHOTO FROM DASHBOARD */
-    async function handleDashUpdateStudentDetails() {
-      if (!selectedStudent) return;
-      const newPhone = document.getElementById("dashEditPhoneInput").value.trim();
-      const newPhoto = document.getElementById("dashEditPhotoUrlInput").value.trim();
-      try {
-        await fetch(`${API_BASE_URL}/students/${selectedStudent._id}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ phone: newPhone, photo: newPhoto })
-        });
-        selectedStudent.phone = newPhone;
-        selectedStudent.photo = newPhoto;
-        document.getElementById("studentAvatarContainer").innerHTML = getAvatarHTML(selectedStudent, "w-16 h-16 sm:w-20 sm:h-20");
+        
         const idx = studentsCache.findIndex(s => s._id === selectedStudent._id);
-        if(idx !== -1) {
-          studentsCache[idx].phone = newPhone;
-          studentsCache[idx].photo = newPhoto;
-        }
-        renderStudentDashboard(selectedStudent);
-        alert("Student contact & photo updated successfully!");
+        if(idx !== -1) studentsCache[idx].results = updatedGrades;
       } catch (err) {
-        selectedStudent.phone = newPhone;
-        selectedStudent.photo = newPhoto;
-        alert("Details updated locally!");
-        renderStudentDashboard(selectedStudent);
+        alert("Failed to add custom subject: " + err.message);
       }
     }
 
-    /* API - REGISTER SINGLE STUDENT */
     async function handleRegisterStudent(e) {
       e.preventDefault();
-      const username = document.getElementById("regUsername").value.trim();
+      const username = document.getElementById("regUsername").value.trim().toLowerCase();
       const fullName = document.getElementById("regFullName").value.trim();
       const password = document.getElementById("regPassword").value;
-      const grade = document.getElementById("regGrade").value.trim();
-      const section = document.getElementById("regSection").value.trim();
+      const grade = document.getElementById("regGrade").value;
+      const section = document.getElementById("regSection").value;
       const countryCode = document.getElementById("regCountryCode").value;
-      const subscriberNumber = document.getElementById("regPhoneNumber").value.trim();
-      const phone = `${countryCode}${subscriberNumber}`;
+      const phoneNum = document.getElementById("regPhoneNumber").value.trim();
+      const phone = countryCode + phoneNum;
       const photo = document.getElementById("regPhoto").value.trim();
       const msgDiv = document.getElementById("regModalMsg");
 
@@ -1752,10 +1723,11 @@
         const response = await fetch(`${API_BASE_URL}/students`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ username, fullName, password, phone, grade, section, photo, isFirstLogin: true })
+          body: JSON.stringify({ username, fullName, password, grade, section, phone, photo, isFirstLogin: true })
         });
-        if (!response.ok) throw new Error("Failed to create student");
-        
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message || 'Failed to register student');
+
         msgDiv.className = "text-emerald-500 font-semibold";
         msgDiv.textContent = "Student registered successfully!";
         setTimeout(() => {
@@ -1770,11 +1742,10 @@
         }, 1000);
       } catch (err) {
         msgDiv.className = "text-red-500 font-semibold";
-        msgDiv.textContent = err.message;
+        msgDiv.textContent = "Error: " + err.message;
       }
     }
 
-    /* API - CHANGE ADMIN PASSWORD */
     async function handleChangePassword(e) {
       e.preventDefault();
       const oldPassword = document.getElementById("oldPassword").value;
@@ -1784,14 +1755,11 @@
       try {
         const response = await fetch(`${API_BASE_URL}/auth/change-admin-password`, {
           method: 'PUT',
-          headers: { 
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${currentAuthToken}`
-          },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ oldPassword, newPassword })
         });
         const data = await response.json();
-        if (!response.ok) throw new Error(data.message || "Failed to update password");
+        if (!response.ok) throw new Error(data.message || 'Failed to update admin password');
 
         msgDiv.className = "text-emerald-500 font-semibold";
         msgDiv.textContent = "Admin password updated successfully!";
@@ -1800,17 +1768,16 @@
           document.getElementById("oldPassword").value = "";
           document.getElementById("newPassword").value = "";
           msgDiv.textContent = "";
-        }, 1000);
+        }, 1200);
       } catch (err) {
         msgDiv.className = "text-red-500 font-semibold";
-        msgDiv.textContent = err.message;
+        msgDiv.textContent = "Error: " + err.message;
       }
     }
 
-    /* API - REGISTER TEACHER WITH PERMISSIONS */
     async function handleRegisterTeacher(e) {
       e.preventDefault();
-      const username = document.getElementById("newTeacherUser").value.trim();
+      const username = document.getElementById("newTeacherUser").value.trim().toLowerCase();
       const fullName = document.getElementById("newTeacherFullName").value.trim();
       const password = document.getElementById("newTeacherPass").value;
       const subject = document.getElementById("newTeacherSubject").value.trim();
@@ -1818,20 +1785,16 @@
       const msgDiv = document.getElementById("teacherModalMsg");
 
       try {
-        const newTeacherObj = { username, fullName, password, subject, assignments };
-        teachersCache.push(newTeacherObj);
-
-        const response = await fetch(`${API_BASE_URL}/auth/register-teacher`, {
+        const response = await fetch(`${API_BASE_URL}/teachers`, {
           method: 'POST',
-          headers: { 
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${currentAuthToken}`
-          },
-          body: JSON.stringify(newTeacherObj)
-        }).catch(() => null);
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, fullName, password, subject, assignments })
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message || 'Failed to register teacher');
 
         msgDiv.className = "text-emerald-500 font-semibold";
-        msgDiv.textContent = "Teacher registered successfully with permissions!";
+        msgDiv.textContent = "Teacher registered successfully!";
         setTimeout(() => {
           closeModal('teacherModal');
           document.getElementById("newTeacherUser").value = "";
@@ -1840,49 +1803,71 @@
           document.getElementById("newTeacherSubject").value = "";
           document.getElementById("newTeacherAssignments").value = "";
           msgDiv.textContent = "";
-          renderAdminTeachersTable();
+          fetchAndRenderTeacherPortal();
         }, 1000);
       } catch (err) {
         msgDiv.className = "text-red-500 font-semibold";
-        msgDiv.textContent = err.message;
+        msgDiv.textContent = "Error: " + err.message;
       }
     }
 
-    /* CSV BULK UPLOAD */
-    function handleCSVUpload(e) {
+    async function handleCSVUpload(e) {
       const file = e.target.files[0];
       if (!file) return;
       const reader = new FileReader();
-      reader.onload = async function(evt) {
-        const lines = evt.target.result.split('\n');
+      reader.onload = async function(event) {
+        const text = event.target.result;
+        const lines = text.split('\n');
         let count = 0;
         for (let i = 1; i < lines.length; i++) {
-          const row = lines[i].split(',');
-          if (row.length >= 5) {
-            const username = row[0].trim();
-            const fullName = row[1].trim();
-            const password = row[2].trim();
-            const grade = row[3].trim();
-            const section = row[4].trim();
-            const phone = row[5] ? row[5].trim() : '';
-            const photo = row[6] ? row[6].trim() : '';
-
-            if (username && fullName && password) {
-              try {
-                await fetch(`${API_BASE_URL}/students`, {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ username, fullName, password, grade, section, phone, photo, isFirstLogin: true })
-                });
-                count++;
-              } catch (err) {}
-            }
+          const line = lines[i].trim();
+          if (!line) continue;
+          const parts = line.split(',');
+          if (parts.length >= 5) {
+            const [username, fullName, password, grade, section, phone, photo] = parts.map(p => p.trim());
+            try {
+              await fetch(`${API_BASE_URL}/students`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, fullName, password, grade, section, phone: phone || '+251911000000', photo: photo || '', isFirstLogin: true })
+              });
+              count++;
+            } catch (err) {}
           }
         }
-        alert(`Successfully processed CSV. Registered ${count} students.`);
+        alert(`Successfully imported ${count} students from CSV.`);
+        document.getElementById("csvFileInput").value = "";
         fetchAndRenderTeacherPortal();
       };
       reader.readAsText(file);
+    }
+
+    async function handleDashUpdateStudentDetails() {
+      if (!selectedStudent) return;
+      const phone = document.getElementById("dashEditPhoneInput").value.trim();
+      const photo = document.getElementById("dashEditPhotoUrlInput").value.trim();
+
+      try {
+        const response = await fetch(`${API_BASE_URL}/students/${selectedStudent._id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ phone, photo })
+        });
+        if (!response.ok) throw new Error("Failed to update student details");
+        
+        selectedStudent.phone = phone;
+        selectedStudent.photo = photo;
+        renderStudentDashboard(selectedStudent);
+        alert("Student contact and photo updated successfully!");
+        
+        const idx = studentsCache.findIndex(s => s._id === selectedStudent._id);
+        if(idx !== -1) {
+          studentsCache[idx].phone = phone;
+          studentsCache[idx].photo = photo;
+        }
+      } catch (err) {
+        alert("Error updating details: " + err.message);
+      }
     }
   </script>
 </body>
