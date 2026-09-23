@@ -1205,302 +1205,572 @@
       teachersCache.forEach(t => {
         const assignments = t.assignments || [];
         const permissionsText = assignments.length > 0 
-          ? assignments.map(a => `<div><strong class="text-indigo-600 dark:text-indigo-400">${a.subject}</strong> (Grades: ${a.grades.join(', ')}, Sections: ${a.sections.join(', ')})</div>`).join('')
-          : '<span class="text-xs text-slate-500">No permissions assigned</span>';
-        
+          ? assignments.map(a => `<div><strong class="text-indigo-600 dark:text-indigo-400">${a.subject}</strong> (Grades: ${a.grades.join(', ')} | Sec: ${a.sections.join(', ')})</div>`).join('')
+          : '<span class="text-slate-400">No specific subject permissions assigned</span>';
+
         tbody.innerHTML += `
-          <tr>
+          <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition">
             <td class="p-3">
-              <div class="flex items-center gap-3">
+              <div class="flex items-center gap-2">
                 ${getAvatarHTML(t, "w-8 h-8")}
-                <div class="font-bold">${t.fullName || t.username}</div>
+                <span class="font-bold">${t.fullName || t.username}</span>
               </div>
             </td>
-            <td class="p-3">
-              <div class="text-xs font-mono">User: ${t.username}</div>
-              <div class="text-xs font-mono text-slate-500">Pass: ${t.password || '••••'}</div>
+            <td class="p-3 font-mono text-xs">
+              <span class="px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded">@${t.username} / ${t.password}</span>
             </td>
             <td class="p-3 text-xs">${permissionsText}</td>
             <td class="p-3 text-right">
-              <button onclick="deleteTeacher('${t._id}')" class="px-2 py-1 bg-red-100 hover:bg-red-200 text-red-600 rounded text-xs font-semibold transition shadow-xs">Delete</button>
+              <button onclick="deleteTeacher('${t._id}')" class="px-2.5 py-1 bg-red-50 dark:bg-red-950/40 text-red-600 rounded text-xs font-semibold hover:bg-red-100">Delete</button>
             </td>
           </tr>
         `;
       });
     }
 
-    /* Missing Logic Functions */
-    function buildFilterBars(students) {
-      // Stub implementation for updating the filter UI
-      const grades = [...new Set(students.map(s => s.grade))].sort();
-      const sections = [...new Set(students.map(s => s.section))].sort();
-
-      const gradeBar = document.getElementById("gradeFilterBar");
-      const secBar = document.getElementById("sectionFilterBar");
-      
-      gradeBar.innerHTML = `<button class="px-3 py-1 bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-300 rounded text-xs font-bold" onclick="activeGradeFilter='ALL'; renderFilteredStudentsDirectory()">All Grades</button>`;
-      grades.forEach(g => {
-        gradeBar.innerHTML += `<button class="px-3 py-1 bg-slate-100 dark:bg-slate-800 rounded text-xs hover:bg-slate-200 dark:hover:bg-slate-700" onclick="activeGradeFilter='${g}'; renderFilteredStudentsDirectory()">Grade ${g}</button>`;
-      });
-
-      secBar.innerHTML = `<button class="px-3 py-1 bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-300 rounded text-xs font-bold" onclick="activeSectionFilter='ALL'; renderFilteredStudentsDirectory()">All Sections</button>`;
-      sections.forEach(s => {
-        secBar.innerHTML += `<button class="px-3 py-1 bg-slate-100 dark:bg-slate-800 rounded text-xs hover:bg-slate-200 dark:hover:bg-slate-700" onclick="activeSectionFilter='${s}'; renderFilteredStudentsDirectory()">Sec ${s}</button>`;
-      });
+    async function deleteTeacher(teacherId) {
+      if (!confirm("Are you sure you want to delete this teacher portal?")) return;
+      try {
+        await fetch(`${API_BASE_URL}/teachers/${teacherId}`, { method: 'DELETE' });
+        teachersCache = teachersCache.filter(t => t._id !== teacherId);
+        renderAdminTeachersTable();
+      } catch (err) { alert("Failed to delete teacher."); }
     }
 
-    function renderFilteredStudentsDirectory() {
-      const tbody = document.getElementById("adminStudentsTableBody");
-      const term = document.getElementById("searchInput")?.value.toLowerCase() || "";
-      
-      const filtered = studentsCache.filter(s => {
-        const matchName = s.fullName.toLowerCase().includes(term) || s.username.toLowerCase().includes(term);
-        const matchGrade = activeGradeFilter === 'ALL' || String(s.grade) === String(activeGradeFilter);
-        const matchSec = activeSectionFilter === 'ALL' || String(s.section).toUpperCase() === String(activeSectionFilter).toUpperCase();
-        return matchName && matchGrade && matchSec;
-      });
+    /* REGISTER TEACHER WITH PERMISSIONS */
+    async function handleRegisterTeacher(e) {
+      e.preventDefault();
+      const username = document.getElementById('newTeacherUser').value.trim();
+      const password = document.getElementById('newTeacherPass').value;
+      const fullName = document.getElementById('newTeacherFullName').value.trim();
+      const photo = document.getElementById('newTeacherPhoto').value.trim();
+      const subject = document.getElementById('assignSubject').value.trim();
+      const gradesInput = document.getElementById('assignGrades').value.trim();
+      const sectionsInput = document.getElementById('assignSections').value.trim();
+      const msgDiv = document.getElementById('teacherModalMsg');
 
-      tbody.innerHTML = "";
-      if (filtered.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="9" class="p-6 text-center text-slate-400">No students match current filters.</td></tr>`;
-      } else {
-        filtered.forEach(s => {
-          const stats = calculateStats(s.results || s.grades);
-          const ranks = computeStudentRanks(studentsCache, s);
-          const passState = showPasswordsPlain ? s.password : '••••••••';
-          
-          tbody.innerHTML += `
-            <tr onclick="viewStudentAsAdmin('${s._id}')" class="cursor-pointer hover:bg-indigo-50/50 dark:hover:bg-slate-800/60 transition">
-              <td class="p-3 flex items-center gap-2">
-                ${getAvatarHTML(s, "w-8 h-8")}
-                <div class="font-bold text-slate-900 dark:text-white">${s.fullName}</div>
-              </td>
-              <td class="p-3 font-mono text-xs">${passState}</td>
-              <td class="p-3 text-xs">${s.phone || '-'}</td>
-              <td class="p-3 text-xs font-semibold">G${s.grade} - S${s.section}</td>
-              <td class="p-3 text-xs">${ranks.sectionRankStr}</td>
-              <td class="p-3 text-xs">${ranks.gradeRankStr}</td>
-              <td class="p-3 font-bold">${stats.total}</td>
-              <td class="p-3">
-                 <span class="font-bold">${stats.avg}%</span> 
-                 <span class="text-[10px] ml-1 px-2 py-0.5 rounded ${stats.pass ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}">${stats.status}</span>
-              </td>
-              <td class="p-3 text-right">
-                <button class="px-2 py-1 bg-indigo-100 hover:bg-indigo-200 text-indigo-700 rounded text-xs font-bold transition shadow-xs">View/Edit</button>
-              </td>
-            </tr>
-          `;
+      const assignments = [];
+      if (subject) {
+        assignments.push({
+          subject: subject,
+          grades: gradesInput ? gradesInput.split(',').map(g => g.trim()) : ["9", "10", "11", "12"],
+          sections: sectionsInput ? sectionsInput.split(',').map(s => s.trim().toUpperCase()) : ["A", "B", "C", "D"]
         });
       }
 
-      // Update Analytics
-      if (document.getElementById("analyticsTotalStudents")) {
-         document.getElementById("analyticsTotalStudents").textContent = filtered.length;
+      try {
+        const response = await fetch(`${API_BASE_URL}/auth/register-teacher`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password, fullName, photo, assignments, isAdmin: false })
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message || 'Failed to register teacher');
+
+        msgDiv.className = "text-emerald-500 text-xs font-semibold";
+        msgDiv.textContent = "Teacher Portal created successfully!";
+        setTimeout(() => {
+          closeModal('teacherModal');
+          document.getElementById('newTeacherUser').value = "";
+          document.getElementById('newTeacherPass').value = "";
+          document.getElementById('newTeacherFullName').value = "";
+          document.getElementById('assignSubject').value = "";
+          document.getElementById('assignGrades').value = "";
+          document.getElementById('assignSections').value = "";
+          msgDiv.textContent = "";
+          fetchAndRenderTeacherPortal();
+        }, 1000);
+      } catch (err) {
+        msgDiv.className = "text-red-500 text-xs font-semibold";
+        msgDiv.textContent = err.message;
       }
     }
 
-    function filterStudentsDirectory() {
+    function buildFilterBars(students) {
+      const validGrades = ['9', '10', '11', '12'];
+      const gradesSet = new Set();
+      students.forEach(s => { if (validGrades.includes(String(s.grade || '9'))) gradesSet.add(String(s.grade)); });
+      const sortedGrades = Array.from(gradesSet).sort();
+
+      const gradeBar = document.getElementById("gradeFilterBar");
+      let gradeHTML = `<button onclick="setGradeFilter('ALL')" class="px-3 py-1.5 rounded-lg text-xs font-semibold transition ${activeGradeFilter === 'ALL' ? 'bg-indigo-600 text-white shadow' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300'}">All Grades</button>`;
+      sortedGrades.forEach(g => {
+        gradeHTML += `<button onclick="setGradeFilter('${g}')" class="px-3 py-1.5 rounded-lg text-xs font-semibold transition ${activeGradeFilter === g ? 'bg-indigo-600 text-white shadow' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300'}">Grade ${g}</button>`;
+      });
+      gradeBar.innerHTML = gradeHTML;
+
+      const sectionBar = document.getElementById("sectionFilterBar");
+      let sectionsList = ['A', 'B', 'C', 'D'];
+      let sectionHTML = `<button onclick="setSectionFilter('ALL')" class="px-3 py-1.5 rounded-lg text-xs font-semibold transition ${activeSectionFilter === 'ALL' ? 'bg-indigo-600 text-white shadow' : 'bg-slate-100 dark:bg-slate-800 text-slate-600'}">All Sections</button>`;
+      
+      sectionsList.forEach(sec => {
+        sectionHTML += `<button onclick="setSectionFilter('${sec}')" class="px-3 py-1.5 rounded-lg text-xs font-semibold transition ${activeSectionFilter === sec ? 'bg-indigo-600 text-white shadow' : 'bg-slate-100 dark:bg-slate-800 text-slate-600'}">Sec ${sec}</button>`;
+      });
+      sectionBar.innerHTML = sectionHTML;
+    }
+
+    function setGradeFilter(grade) {
+      activeGradeFilter = grade;
+      activeSectionFilter = 'ALL';
+      buildFilterBars(studentsCache);
+      renderFilteredStudentsDirectory();
+    }
+
+    function setSectionFilter(section) {
+      activeSectionFilter = section;
+      buildFilterBars(studentsCache);
       renderFilteredStudentsDirectory();
     }
 
     function togglePasswordsVisibility() {
       showPasswordsPlain = !showPasswordsPlain;
-      document.getElementById("togglePasswordsBtn").textContent = showPasswordsPlain ? "🙈 Hide Passwords" : "👁️ Show Passwords";
+      const btn = document.getElementById("togglePasswordsBtn");
+      btn.textContent = showPasswordsPlain ? "🔒 Hide Passwords" : "👁️ Show Passwords";
       renderFilteredStudentsDirectory();
     }
 
-    function viewStudentAsAdmin(id) {
-       const std = studentsCache.find(s => s._id === id);
-       if(std) {
-          document.getElementById("teacherDashboardCard").classList.add("hidden");
-          document.getElementById("teacherBackBtn").classList.remove("hidden");
-          document.getElementById("teacherDashboardGradeSection").classList.remove("hidden");
-          selectedStudent = std;
-          renderStudentDashboard(std);
-       }
+    function renderFilteredStudentsDirectory() {
+      const term = document.getElementById("searchInput").value.toLowerCase();
+      const tbody = document.getElementById("adminStudentsTableBody");
+      
+      const filtered = studentsCache.filter(s => {
+        const studentPhone = s.phone || s.phoneNumber || '';
+        const matchText = s.fullName.toLowerCase().includes(term) || s.username.toLowerCase().includes(term) || studentPhone.toLowerCase().includes(term);
+        const matchGrade = activeGradeFilter === 'ALL' || String(s.grade || '9') === String(activeGradeFilter);
+        const matchSection = activeSectionFilter === 'ALL' || String(s.section || 'A').toUpperCase() === String(activeSectionFilter);
+        return matchText && matchGrade && matchSection;
+      });
+
+      updateAnalyticsHeader(filtered);
+
+      tbody.innerHTML = "";
+      if (!filtered || filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="9" class="p-6 text-center text-slate-400">No students match the current filters.</td></tr>`;
+        return;
+      }
+
+      filtered.forEach(s => {
+        const studentGrades = s.results || s.grades || [];
+        const stats = calculateStats(studentGrades);
+        const ranks = computeStudentRanks(studentsCache, s);
+        const studentPhone = s.phone || s.phoneNumber || '+251911000000';
+        const streamText = getStudentStream(s.grade, s.section);
+        const displayPassword = showPasswordsPlain ? (s.password || '••••••••') : '••••••••';
+        
+        tbody.innerHTML += `<tr onclick="selectStudentForEditing('${s._id}')" class="cursor-pointer hover:bg-indigo-50/50 dark:hover:bg-slate-800/60 transition">
+            <td class="p-3.5">
+              <div class="flex items-center gap-3">
+                ${getAvatarHTML(s, "w-10 h-10")}
+                <div>
+                  <div class="font-bold text-slate-900 dark:text-white">${s.fullName}</div>
+                  <div class="text-xs text-indigo-600 dark:text-indigo-400 font-mono">@${s.username}</div>
+                </div>
+              </div>
+            </td>
+            <td class="p-3.5 font-mono text-xs font-semibold text-slate-700 dark:text-slate-300">
+              <span class="px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded border border-slate-200 dark:border-slate-700">${displayPassword}</span>
+            </td>
+            <td class="p-3.5" onclick="event.stopPropagation()">
+              <a href="tel:${studentPhone}" class="inline-flex items-center gap-1.5 font-mono text-xs text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950 px-2.5 py-1.5 rounded-lg font-semibold shadow-xs transition">
+                📞 ${studentPhone}
+              </a>
+            </td>
+            <td class="p-3.5 text-xs font-medium text-slate-600 dark:text-slate-300">
+              <div>Grade ${s.grade || '9'} - Sec ${s.section || 'A'}</div>
+              <div class="text-[10px] text-indigo-600 dark:text-indigo-400 font-semibold">${streamText}</div>
+            </td>
+            <td class="p-3.5 font-bold text-xs text-indigo-600 dark:text-indigo-400">${ranks.sectionRankStr}</td>
+            <td class="p-3.5 font-bold text-xs text-emerald-600 dark:text-emerald-400">${ranks.gradeRankStr}</td>
+            <td class="p-3.5 font-bold text-xs text-slate-800 dark:text-slate-200">${studentGrades.length > 0 ? stats.total + ' / ' + stats.maxTotal : '--'}</td>
+            <td class="p-3.5">
+              <div class="flex items-center gap-2">
+                <span class="font-bold text-slate-900 dark:text-white text-xs">${studentGrades.length > 0 ? stats.avg + '%' : '--'}</span>
+                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${studentGrades.length === 0 ? 'bg-slate-100 text-slate-500' : stats.pass ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30' : 'bg-red-100 text-red-700'}">${studentGrades.length === 0 ? 'NO DATA' : stats.status}</span>
+              </div>
+            </td>
+            <td class="p-3.5 text-right">
+              <span class="text-xs font-semibold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950 px-2.5 py-1.5 rounded-lg inline-block shadow-xs">View Dashboard &rarr;</span>
+            </td>
+          </tr>`;
+      });
+    }
+
+    function updateAnalyticsHeader(filteredStudents) {
+      document.getElementById("analyticsTotalStudents").textContent = filteredStudents.length;
+      let sumAvg = 0, passCount = 0, activeGradedCount = 0, topStudent = null, highestAvg = -1;
+
+      filteredStudents.forEach(s => {
+        const res = s.results || s.grades || [];
+        if (res.length > 0) {
+          const stats = calculateStats(res);
+          sumAvg += stats.avg;
+          activeGradedCount++;
+          if (stats.pass) passCount++;
+          if (stats.avg > highestAvg) { highestAvg = stats.avg; topStudent = s.fullName; }
+        }
+      });
+
+      document.getElementById("analyticsClassAvg").textContent = `${activeGradedCount > 0 ? (sumAvg / activeGradedCount).toFixed(1) : 0.0}%`;
+      document.getElementById("analyticsPassRate").textContent = `${activeGradedCount > 0 ? Math.round((passCount / activeGradedCount) * 100) : 0}%`;
+      document.getElementById("analyticsTopStudent").textContent = topStudent || 'None yet';
+    }
+
+    function filterStudentsDirectory() { renderFilteredStudentsDirectory(); }
+
+    function selectStudentForEditing(id) {
+      selectedStudent = studentsCache.find(s => s._id === id);
+      if (!selectedStudent) return;
+      
+      if (activeRole === 'teacher') {
+        document.getElementById("teacherDashboardCard").classList.add("hidden");
+        document.getElementById("studentDashboardCard").classList.remove("hidden");
+        document.getElementById("studentResultsView").classList.remove("hidden");
+        document.getElementById("studentSettingsView").classList.add("hidden");
+        document.getElementById("logoutBtn").classList.remove("hidden");
+        document.getElementById("teacherBackBtn").classList.remove("hidden");
+        document.getElementById("teacherDashboardGradeSection").classList.remove("hidden");
+
+        renderStudentDashboard(selectedStudent);
+        renderDashAdminGradesTable(selectedStudent);
+        
+        document.getElementById("dashEditPhoneInput").value = selectedStudent.phone || selectedStudent.phoneNumber || "";
+        document.getElementById("dashEditPhotoUrlInput").value = selectedStudent.photo || selectedStudent.photoUrl || "";
+        document.getElementById("teacherEditorStreamBadge").textContent = getStudentStream(selectedStudent.grade, selectedStudent.section);
+      }
     }
 
     function backToTeacherPortal() {
-      selectedStudent = null;
       document.getElementById("studentDashboardCard").classList.add("hidden");
       document.getElementById("teacherDashboardCard").classList.remove("hidden");
       document.getElementById("teacherBackBtn").classList.add("hidden");
       document.getElementById("teacherDashboardGradeSection").classList.add("hidden");
+      selectedStudent = null;
       renderFilteredStudentsDirectory();
+    }
+
+    function renderDashAdminGradesTable(student) {
+      const tbody = document.getElementById("dashAdminGradesBody");
+      const g = String(student.grade || '9');
+      const s = String(student.section || 'A').toUpperCase();
+      let standardSubjects = (g === '9' || g === '10') ? ["Amharic", "English", "Mathematics", "Physics", "Chemistry", "Biology", "Geography", "History", "Economics", "Civics", "IT", "Sport", "Art"] : ["Physics", "Mathematics", "Biology", "Chemistry", "English", "IT", "Amharic", "Agriculture"];
+
+      const existingGrades = student.results || student.grades || [];
+      const gradeMap = {};
+      existingGrades.forEach(item => { gradeMap[item.subject] = { score: item.score, _id: item._id }; });
+
+      const allSubjects = Array.from(new Set([...standardSubjects, ...existingGrades.map(item => item.subject)]));
+      tbody.innerHTML = "";
+
+      allSubjects.forEach(sub => {
+        const gradeData = gradeMap[sub];
+        const hasScore = gradeData !== undefined;
+        const scoreVal = hasScore ? gradeData.score : '';
+        const isPass = hasScore && scoreVal >= 50;
+
+        tbody.innerHTML += `
+          <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition">
+            <td class="p-3 font-semibold text-slate-900 dark:text-white">${sub}</td>
+            <td class="p-3">
+              <input type="number" id="score_input_${sub.replace(/\s+/g, '_')}" min="0" max="100" value="${scoreVal}" placeholder="0-100" class="w-28 px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm font-bold focus:ring-2 focus:ring-indigo-600 focus:outline-none">
+            </td>
+            <td class="p-3">
+              <span class="px-2.5 py-1 rounded-full text-xs font-bold ${!hasScore ? 'bg-slate-100 text-slate-400' : isPass ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}">
+                ${!hasScore ? 'Not Graded' : isPass ? 'PASS' : 'FAIL'}
+              </span>
+            </td>
+            <td class="p-3 text-right">
+              <button type="button" onclick="saveSubjectScore('${sub}')" class="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold shadow-xs transition">Save Score</button>
+            </td>
+          </tr>
+        `;
+      });
+    }
+
+    async function saveSubjectScore(subjectName) {
+      if (!selectedStudent) return;
+      const inputId = `score_input_${subjectName.replace(/\s+/g, '_')}`;
+      const scoreVal = document.getElementById(inputId).value;
+      if (scoreVal === '' || isNaN(scoreVal)) { alert("Please enter a valid score between 0 and 100."); return; }
+      const score = parseInt(scoreVal);
+      if (score < 0 || score > 100) { alert("Score must be between 0 and 100."); return; }
+
+      try {
+        const response = await fetch(`${API_BASE_URL}/students/${selectedStudent._id}/grades`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ subject: subjectName, score })
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message);
+        
+        selectedStudent.results = data.results || data.grades || [];
+        renderStudentDashboard(selectedStudent);
+        renderDashAdminGradesTable(selectedStudent);
+        
+        const idx = studentsCache.findIndex(s => s._id === selectedStudent._id);
+        if(idx !== -1) studentsCache[idx].results = selectedStudent.results;
+      } catch (err) { alert("Failed to save score: " + err.message); }
+    }
+
+    async function addCustomSubject() {
+      if (!selectedStudent) return;
+      const name = document.getElementById("dashCustomSubjectName").value.trim();
+      const scoreVal = document.getElementById("dashCustomSubjectScore").value;
+      if (!name || scoreVal === '') { alert("Please enter both subject name and score."); return; }
+      const score = parseInt(scoreVal);
+      try {
+        const response = await fetch(`${API_BASE_URL}/students/${selectedStudent._id}/grades`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ subject: name, score })
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message);
+        
+        selectedStudent.results = data.results || data.grades || [];
+        renderStudentDashboard(selectedStudent);
+        renderDashAdminGradesTable(selectedStudent);
+        
+        const idx = studentsCache.findIndex(s => s._id === selectedStudent._id);
+        if(idx !== -1) studentsCache[idx].results = selectedStudent.results;
+        
+        document.getElementById("dashCustomSubjectName").value = "";
+        document.getElementById("dashCustomSubjectScore").value = "";
+      } catch (err) { alert("Failed to add subject: " + err.message); }
+    }
+
+    async function handleDashUpdateStudentDetails() {
+      if (!selectedStudent) return;
+      const newPhone = document.getElementById("dashEditPhoneInput").value.trim();
+      const newPhoto = document.getElementById("dashEditPhotoUrlInput").value.trim();
+      try {
+        await fetch(`${API_BASE_URL}/students/${selectedStudent._id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ phone: newPhone, photo: newPhoto })
+        });
+        selectedStudent.phone = newPhone;
+        selectedStudent.photo = newPhoto;
+        renderStudentDashboard(selectedStudent);
+        alert("Student contact & photo updated successfully!");
+      } catch (err) { alert("Details updated locally!"); }
+    }
+
+    async function handleRegisterStudent(e) {
+      e.preventDefault();
+      const username = document.getElementById("regUsername").value.trim();
+      const fullName = document.getElementById("regFullName").value.trim();
+      const password = document.getElementById("regPassword").value;
+      const grade = document.getElementById("regGrade").value.trim();
+      const section = document.getElementById("regSection").value.trim();
+      const phone = `${document.getElementById("regCountryCode").value}${document.getElementById("regPhoneNumber").value.trim()}`;
+      const photo = document.getElementById("regPhoto").value.trim();
+      const msgDiv = document.getElementById("regModalMsg");
+
+      try {
+        const response = await fetch(`${API_BASE_URL}/students`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, fullName, password, phone, grade, section, photo, isFirstLogin: true })
+        });
+        if (!response.ok) throw new Error("Failed to create student");
+        
+        msgDiv.className = "text-emerald-500 font-semibold";
+        msgDiv.textContent = "Student registered successfully!";
+        setTimeout(() => {
+          closeModal('addStudentModal');
+          fetchAndRenderTeacherPortal();
+        }, 1000);
+      } catch (err) {
+        msgDiv.className = "text-red-500 font-semibold";
+        msgDiv.textContent = err.message;
+      }
+    }
+
+    function handleCSVUpload(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = async function(evt) {
+        const lines = evt.target.result.split('\n');
+        let count = 0;
+        for (let i = 1; i < lines.length; i++) {
+          const row = lines[i].split(',');
+          if (row.length >= 3) {
+            const username = row[0].trim();
+            const fullName = row[1].trim();
+            const password = row[2].trim();
+            const grade = row[3] ? row[3].trim() : "9";
+            const section = row[4] ? row[4].trim() : "A";
+            const phone = row[5] ? row[5].trim() : "+251911000000";
+            const photo = row[6] ? row[6].trim() : "";
+            if (username && password) {
+              await fetch(`${API_BASE_URL}/students`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, fullName, password, phone, grade, section, photo, isFirstLogin: true })
+              });
+              count++;
+            }
+          }
+        }
+        alert(`Successfully imported ${count} students!`);
+        await fetchAndRenderTeacherPortal();
+      };
+      reader.readAsText(file);
+    }
+
+    async function handleChangePassword(e) {
+      e.preventDefault();
+      const msg = document.getElementById('pwdModalMsg');
+      try {
+        const response = await fetch(`${API_BASE_URL}/auth/change-password`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            oldPassword: document.getElementById('oldPassword').value, 
+            newPassword: document.getElementById('newPassword').value 
+          })
+        });
+        if (!response.ok) throw new Error('Failed to update password');
+        msg.className = "text-emerald-500 text-xs font-medium"; msg.textContent = "Password updated successfully!";
+        setTimeout(() => closeModal('passwordModal'), 1500);
+      } catch (err) { msg.className = "text-red-500 text-xs font-medium"; msg.textContent = err.message; }
     }
 
     function renderStudentDashboard(student) {
       document.getElementById("loginCard").classList.add("hidden");
       document.getElementById("studentDashboardCard").classList.remove("hidden");
       document.getElementById("logoutBtn").classList.remove("hidden");
-
+      document.getElementById("studentResultsView").classList.remove("hidden");
+      
       const streamText = getStudentStream(student.grade, student.section);
       document.getElementById("studentNameDisplay").textContent = student.fullName;
       document.getElementById("studentMeta").textContent = `Grade ${student.grade || '9'} | Section ${student.section || 'A'} | ${streamText}`;
+      
+      const uniqueSerial = `HSS-TR-2026-${student._id ? student._id.toString().substring(student._id.toString().length - 6).toUpperCase() : '9821'}`;
+      document.getElementById("studentSerialDisplay").textContent = `Serial No: ${uniqueSerial}`;
       document.getElementById("studentAvatarContainer").innerHTML = getAvatarHTML(student, "w-16 h-16 sm:w-20 sm:h-20");
 
-      if (document.getElementById("dashEditPhoneInput")) {
-         document.getElementById("dashEditPhoneInput").value = student.phone || "";
-         document.getElementById("dashEditPhotoUrlInput").value = student.photo || student.photoUrl || "";
-      }
+      const verificationUrl = `${window.location.origin}?verify=${student.username}&serial=${uniqueSerial}`;
+      document.getElementById("certQrCode").src = `https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(verificationUrl)}`;
 
-      const results = student.results || student.grades || [];
-      const stats = calculateStats(results);
-      const ranks = computeStudentRanks(studentsCache, student);
+      const studentResults = student.results || student.grades || [];
+      const stats = calculateStats(studentResults);
 
       document.getElementById("studentTotalDisplay").textContent = `${stats.total} / ${stats.maxTotal}`;
       document.getElementById("studentAvgDisplay").textContent = `${stats.avg}%`;
-      document.getElementById("studentSectionRankDisplay").textContent = ranks.sectionRankStr;
+
+      const ranks = computeStudentRanks(studentsCache.length ? studentsCache : [student], student);
+      document.getElementById("studentSectionRankDisplay").innerHTML = `${ranks.sectionRankStr} <span class="block text-[11px] font-medium text-slate-500 dark:text-slate-400 mt-0.5">${streamText}</span>`;
       document.getElementById("studentGradeRankDisplay").textContent = ranks.gradeRankStr;
-
-      const badge = document.getElementById("studentStatusBadge");
-      badge.innerHTML = `<span class="px-2.5 py-0.5 rounded-full text-xs font-bold ${stats.pass ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}">${stats.status}</span>`;
-
-      // Render Display Body
-      const resultsBody = document.getElementById("studentResultsBody");
-      resultsBody.innerHTML = "";
-      if(results.length === 0) {
-        resultsBody.innerHTML = `<tr><td colspan="4" class="p-4 text-center text-slate-400">No results recorded yet.</td></tr>`;
-      } else {
-        results.forEach(r => {
-           const pass = (Number(r.score) >= 50);
-           resultsBody.innerHTML += `
-            <tr>
-              <td class="p-3 sm:p-4 font-semibold text-slate-900 dark:text-slate-100">${r.subject}</td>
-              <td class="p-3 sm:p-4 font-bold ${pass ? 'text-indigo-600 dark:text-indigo-400' : 'text-red-500'}">${r.score}</td>
-              <td class="p-3 sm:p-4">${pass ? 'Pass' : 'Fail'}</td>
-              <td class="p-3 sm:p-4">
-                <span class="px-2 py-0.5 rounded text-[10px] font-bold ${pass ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-600'}">${pass ? 'SATISFACTORY' : 'NEEDS WORK'}</span>
-              </td>
-            </tr>`;
-        });
-      }
-
-      // If in admin mode, render editor table
-      const adminBody = document.getElementById("dashAdminGradesBody");
-      if (adminBody) {
-         adminBody.innerHTML = "";
-         results.forEach(r => {
-           adminBody.innerHTML += `
-             <tr>
-               <td class="p-3 font-semibold">${r.subject}</td>
-               <td class="p-3">
-                 <input type="number" id="edit_score_${r.subject.replace(/\s+/g, '_')}" value="${r.score}" class="w-24 px-2 py-1 rounded border border-slate-300 dark:border-slate-700 bg-transparent text-sm">
-               </td>
-               <td class="p-3 text-xs">${Number(r.score) >= 50 ? 'PASS' : 'FAIL'}</td>
-               <td class="p-3 text-right">
-                 <button onclick="saveAdminScore('${r.subject}')" class="px-3 py-1 bg-indigo-100 text-indigo-700 rounded text-xs font-bold hover:bg-indigo-200">Save</button>
-               </td>
-             </tr>`;
-         });
-      }
-    }
-
-    async function saveAdminScore(subject) {
-      if(!selectedStudent) return;
-      const inputId = `edit_score_${subject.replace(/\s+/g, '_')}`;
-      const score = Number(document.getElementById(inputId).value);
       
-      try {
-        const response = await fetch(`${API_BASE_URL}/students/${selectedStudent._id}/grades`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ subject, score })
-        });
-        const data = await response.json();
-        if(response.ok) {
-           selectedStudent.results = data.results || data.grades;
-           const idx = studentsCache.findIndex(s => s._id === selectedStudent._id);
-           if(idx !== -1) studentsCache[idx].results = selectedStudent.results;
-           alert("Score updated!");
-           renderStudentDashboard(selectedStudent);
-        } else {
-           alert("Failed: " + data.message);
-        }
-      } catch(err) { alert("Error saving score."); }
+      const statusBadgeContainer = document.getElementById("studentStatusBadge");
+      const honorBadge = document.getElementById("studentHonorBadge");
+
+      if (studentResults.length === 0) {
+        statusBadgeContainer.innerHTML = `<span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-slate-100 text-slate-500">No Grades</span>`;
+        honorBadge.textContent = "No Records";
+      } else if (stats.pass) {
+        statusBadgeContainer.innerHTML = `<span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-700">PASS</span>`;
+        honorBadge.textContent = stats.avg >= 85 ? "★ Honors Distinction" : "✓ Satisfactory Progress";
+      } else {
+        statusBadgeContainer.innerHTML = `<span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-red-100 text-red-700">FAIL</span>`;
+        honorBadge.textContent = "⚠ Needs Academic Support";
+      }
+
+      const tbody = document.getElementById("studentResultsBody");
+      tbody.innerHTML = "";
+      if (studentResults.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="4" class="p-6 text-center text-slate-400">No subject grades recorded yet.</td></tr>`;
+        return;
+      }
+      studentResults.forEach(res => {
+        const isPass = res.score >= 50;
+        tbody.innerHTML += `<tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition">
+            <td class="p-3 sm:p-4 font-medium">${res.subject}</td>
+            <td class="p-3 sm:p-4 font-bold">${res.score}/100</td>
+            <td class="p-3 sm:p-4">${res.grade || '-'}</td>
+            <td class="p-3 sm:p-4"><span class="px-2.5 py-1 rounded-full text-xs font-bold ${isPass ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}">${isPass ? 'PASS' : 'FAIL'}</span></td>
+          </tr>`;
+      });
     }
 
     function toggleStudentSettings() {
       const resultsView = document.getElementById("studentResultsView");
       const settingsView = document.getElementById("studentSettingsView");
-      if(settingsView.classList.contains("hidden")) {
-         resultsView.classList.add("hidden");
-         settingsView.classList.remove("hidden");
-         const target = loggedInStudent || selectedStudent;
-         if(target) {
-           document.getElementById("studentEditFullName").value = target.fullName;
-           document.getElementById("studentEditPhone").value = target.phone || "";
-           document.getElementById("studentEditPhotoUrl").value = target.photo || target.photoUrl || "";
-           document.getElementById("studentEditPassword").value = "";
-         }
+      const isSettingsOpen = !settingsView.classList.contains("hidden");
+
+      if (isSettingsOpen) {
+        settingsView.classList.add("hidden");
+        resultsView.classList.remove("hidden");
+        document.getElementById("studentSettingsToggleBtn").textContent = "⚙️ Profile Settings";
+        if (activeRole === 'teacher') document.getElementById("teacherDashboardGradeSection").classList.remove("hidden");
       } else {
-         settingsView.classList.add("hidden");
-         resultsView.classList.remove("hidden");
+        resultsView.classList.add("hidden");
+        settingsView.classList.remove("hidden");
+        document.getElementById("studentSettingsToggleBtn").textContent = "📊 View Results";
+        document.getElementById("teacherDashboardGradeSection").classList.add("hidden");
+        
+        document.getElementById("studentEditFullName").value = loggedInStudent.fullName || "";
+        document.getElementById("studentEditPhone").value = loggedInStudent.phone || loggedInStudent.phoneNumber || "";
+        document.getElementById("studentEditPhotoUrl").value = loggedInStudent.photo || loggedInStudent.photoUrl || "";
+        document.getElementById("studentEditPassword").value = "";
+        document.getElementById("studentSettingsMsg").textContent = "";
       }
     }
 
     async function handleStudentProfileUpdate(e) {
       e.preventDefault();
-      const target = loggedInStudent || selectedStudent;
-      if(!target) return;
-      
-      const payload = {
-        fullName: document.getElementById("studentEditFullName").value,
-        phone: document.getElementById("studentEditPhone").value,
-        photo: document.getElementById("studentEditPhotoUrl").value
-      };
-      
-      const pass = document.getElementById("studentEditPassword").value;
-      if(pass && pass.length >= 4) payload.password = pass;
+      const newFullName = document.getElementById("studentEditFullName").value.trim();
+      const newPhone = document.getElementById("studentEditPhone").value.trim();
+      const newPhoto = document.getElementById("studentEditPhotoUrl").value.trim();
+      const newPassword = document.getElementById("studentEditPassword").value;
+      const msgDiv = document.getElementById("studentSettingsMsg");
+
+      const updatePayload = { fullName: newFullName, phone: newPhone, photo: newPhoto };
+      if (newPassword && newPassword.length >= 4) updatePayload.password = newPassword;
 
       try {
-        const res = await fetch(`${API_BASE_URL}/students/${target._id}`, {
+        const response = await fetch(`${API_BASE_URL}/students/${loggedInStudent._id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
+          body: JSON.stringify(updatePayload)
         });
-        if(res.ok) {
-          const data = await res.json();
-          Object.assign(target, payload);
-          document.getElementById("studentSettingsMsg").textContent = "Success!";
-          document.getElementById("studentSettingsMsg").className = "text-emerald-500 font-bold";
-          setTimeout(() => { toggleStudentSettings(); renderStudentDashboard(target); }, 1000);
-        } else {
-          document.getElementById("studentSettingsMsg").textContent = "Failed to update";
-          document.getElementById("studentSettingsMsg").className = "text-red-500 font-bold";
-        }
-      } catch(err) {
-        document.getElementById("studentSettingsMsg").textContent = "Error updating profile";
+        if (!response.ok) throw new Error("Failed to update profile");
+        
+        loggedInStudent.fullName = newFullName;
+        loggedInStudent.phone = newPhone;
+        loggedInStudent.photo = newPhoto;
+
+        msgDiv.className = "text-emerald-500 font-semibold";
+        msgDiv.textContent = "Profile updated successfully!";
+        setTimeout(() => toggleStudentSettings(), 1200);
+      } catch (err) {
+        msgDiv.className = "text-red-500 font-semibold";
+        msgDiv.textContent = "Error: " + err.message;
       }
     }
 
     function logout() {
-      currentAuthToken = null;
-      loggedInStudent = null;
-      loggedInPortalTeacher = null;
-      selectedStudent = null;
-      
+      currentAuthToken = null; selectedStudent = null; loggedInStudent = null; loggedInPortalTeacher = null;
+      document.getElementById("studentLoginForm").reset();
+      document.getElementById("portalTeacherLoginForm").reset();
+      document.getElementById("teacherLoginForm").reset();
       document.getElementById("studentDashboardCard").classList.add("hidden");
       document.getElementById("portalTeacherDashboardCard").classList.add("hidden");
       document.getElementById("teacherDashboardCard").classList.add("hidden");
-      document.getElementById("logoutBtn").classList.add("hidden");
-      document.getElementById("loginCard").classList.remove("hidden");
-      
-      // Reset views
-      document.getElementById("studentResultsView").classList.remove("hidden");
       document.getElementById("studentSettingsView").classList.add("hidden");
+      document.getElementById("portalTeacherSettingsView").classList.add("hidden");
       document.getElementById("teacherBackBtn").classList.add("hidden");
       document.getElementById("teacherDashboardGradeSection").classList.add("hidden");
+      document.getElementById("studentResultsView").classList.remove("hidden");
+      document.getElementById("portalTeacherMainDirectory").classList.remove("hidden");
+      document.getElementById("portalTeacherGradingBox").classList.add("hidden");
+      document.getElementById("loginCard").classList.remove("hidden");
+      document.getElementById("logoutBtn").classList.add("hidden");
+      closeModal('firstLoginModal');
     }
-
-    // Mock API implementations to avoid console errors
-    function handleCSVUpload(e) { alert("CSV Upload not connected."); }
-    function handleChangePassword(e) { e.preventDefault(); alert("Admin password update mocked."); closeModal('passwordModal'); }
-    function handleRegisterTeacher(e) { e.preventDefault(); alert("Teacher registration mocked."); closeModal('teacherModal'); }
-    function handleRegisterStudent(e) { e.preventDefault(); alert("Student registration mocked."); closeModal('addStudentModal'); }
-    function handleDashUpdateStudentDetails() { alert("Student details update mocked."); }
-    function addCustomSubject() { alert("Subject addition mocked."); }
-    function deleteTeacher(id) { if(confirm("Delete this teacher?")) alert("Deletion mocked for ID: " + id); }
   </script>
 </body>
 </html>
