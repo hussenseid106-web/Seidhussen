@@ -1277,41 +1277,41 @@
       if (!selectedStudent) return;
       const newPhone = document.getElementById("dashEditPhoneInput").value.trim();
       const newPhoto = document.getElementById("dashEditPhotoUrlInput").value.trim();
+      
       try {
-        await fetch(`${API_BASE_URL}/students/${selectedStudent._id}`, {
+        const response = await fetch(`${API_BASE_URL}/students/${selectedStudent._id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ phone: newPhone, photo: newPhoto })
         });
+        
+        if (!response.ok) throw new Error("Failed to update student details");
+        
         selectedStudent.phone = newPhone;
         selectedStudent.photo = newPhoto;
-        document.getElementById("studentAvatarContainer").innerHTML = getAvatarHTML(selectedStudent, "w-16 h-16 sm:w-20 sm:h-20");
+        
         const idx = studentsCache.findIndex(s => s._id === selectedStudent._id);
         if(idx !== -1) {
           studentsCache[idx].phone = newPhone;
           studentsCache[idx].photo = newPhoto;
         }
-        renderStudentDashboard(selectedStudent);
-        alert("Student contact & photo updated successfully!");
+        
+        document.getElementById("studentAvatarContainer").innerHTML = getAvatarHTML(selectedStudent, "w-16 h-16 sm:w-20 sm:h-20");
+        alert("Contact and photo updated successfully!");
       } catch (err) {
-        selectedStudent.phone = newPhone;
-        selectedStudent.photo = newPhoto;
-        alert("Details updated locally!");
-        renderStudentDashboard(selectedStudent);
+        alert("Failed to update details: " + err.message);
       }
     }
 
-    /* API - REGISTER SINGLE STUDENT */
+    /* API - REGISTER NEW STUDENT */
     async function handleRegisterStudent(e) {
       e.preventDefault();
       const username = document.getElementById("regUsername").value.trim();
       const fullName = document.getElementById("regFullName").value.trim();
       const password = document.getElementById("regPassword").value;
-      const grade = document.getElementById("regGrade").value.trim();
-      const section = document.getElementById("regSection").value.trim();
-      const countryCode = document.getElementById("regCountryCode").value;
-      const subscriberNumber = document.getElementById("regPhoneNumber").value.trim();
-      const phone = `${countryCode}${subscriberNumber}`;
+      const grade = document.getElementById("regGrade").value;
+      const section = document.getElementById("regSection").value;
+      const phone = document.getElementById("regCountryCode").value + document.getElementById("regPhoneNumber").value.trim();
       const photo = document.getElementById("regPhoto").value.trim();
       const msgDiv = document.getElementById("regModalMsg");
 
@@ -1319,114 +1319,125 @@
         const response = await fetch(`${API_BASE_URL}/students`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ username, fullName, password, phone, grade, section, photo, isFirstLogin: true })
+          body: JSON.stringify({ username, fullName, password, grade, section, phone, photo })
         });
-        if (!response.ok) throw new Error("Failed to create student");
         
-        msgDiv.className = "text-emerald-500 font-semibold";
+        if (!response.ok) {
+          const data = await response.json().catch(() => ({}));
+          throw new Error(data.message || "Failed to register student");
+        }
+
+        msgDiv.className = "text-emerald-500 font-semibold text-xs";
         msgDiv.textContent = "Student registered successfully!";
+        
         setTimeout(() => {
           closeModal('addStudentModal');
-          document.getElementById("regUsername").value = "";
-          document.getElementById("regFullName").value = "";
-          document.getElementById("regPassword").value = "";
-          document.getElementById("regPhoneNumber").value = "";
-          document.getElementById("regPhoto").value = "";
+          e.target.reset();
           msgDiv.textContent = "";
-          fetchAndRenderTeacherPortal();
-        }, 1000);
+          fetchAndRenderTeacherPortal(); // Refresh table view
+        }, 1200);
       } catch (err) {
-        msgDiv.className = "text-red-500 font-semibold";
+        msgDiv.className = "text-red-500 font-semibold text-xs";
         msgDiv.textContent = err.message;
       }
     }
 
-    /* CSV BULK UPLOAD */
-    function handleCSVUpload(e) {
-      const file = e.target.files[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = async function(evt) {
-        const lines = evt.target.result.split('\n');
-        let count = 0;
-        for (let i = 1; i < lines.length; i++) {
-          const row = lines[i].split(',');
-          if (row.length >= 3) {
-            const username = row[0].trim();
-            const fullName = row[1].trim();
-            const password = row[2].trim();
-            const grade = row[3] ? row[3].trim() : "9";
-            const section = row[4] ? row[4].trim() : "A";
-            const phone = row[5] ? row[5].trim() : "+251911000000";
-            const photo = row[6] ? row[6].trim() : "";
-            if (username && password) {
-              await fetch(`${API_BASE_URL}/students`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username, fullName, password, phone, grade, section, photo, isFirstLogin: true })
-              });
-              count++;
-            }
-          }
-        }
-        alert(`Successfully imported ${count} students with phone numbers and first-login security enforcement enabled!`);
-        e.target.value = ""; 
-        await fetchAndRenderTeacherPortal();
-      };
-      reader.readAsText(file);
-    }
-
-    /* ADMIN PASSWORD CHANGE */
+    /* API - CHANGE ADMIN PASSWORD */
     async function handleChangePassword(e) {
       e.preventDefault();
-      const msg = document.getElementById('pwdModalMsg');
+      const oldPassword = document.getElementById("oldPassword").value;
+      const newPassword = document.getElementById("newPassword").value;
+      const msgDiv = document.getElementById("pwdModalMsg");
+      
       try {
         const response = await fetch(`${API_BASE_URL}/auth/change-password`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ 
-            oldPassword: document.getElementById('oldPassword').value, 
-            newPassword: document.getElementById('newPassword').value 
-          })
+          method: 'PUT',
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${currentAuthToken}` 
+          },
+          body: JSON.stringify({ oldPassword, newPassword })
         });
-        if (!response.ok) throw new Error('Failed to update password');
-        msg.className = "text-emerald-500 text-xs font-medium"; msg.textContent = "Password updated successfully!";
-        setTimeout(() => closeModal('passwordModal'), 1500);
-      } catch (err) { msg.className = "text-red-500 text-xs font-medium"; msg.textContent = err.message; }
+        
+        if (!response.ok) throw new Error("Failed to change password. Check current password.");
+        
+        msgDiv.className = "text-emerald-500 font-semibold text-xs";
+        msgDiv.textContent = "Password updated successfully!";
+        
+        setTimeout(() => {
+          closeModal('passwordModal');
+          e.target.reset();
+          msgDiv.textContent = "";
+        }, 1200);
+      } catch(err) {
+        msgDiv.className = "text-red-500 font-semibold text-xs";
+        msgDiv.textContent = err.message;
+      }
     }
 
-    /* REGISTER CO-TEACHER */
+    /* API - REGISTER NEW TEACHER */
     async function handleRegisterTeacher(e) {
       e.preventDefault();
-      const msg = document.getElementById('teacherModalMsg');
+      const username = document.getElementById("newTeacherUser").value.trim();
+      const password = document.getElementById("newTeacherPass").value;
+      const msgDiv = document.getElementById("teacherModalMsg");
+
       try {
         const response = await fetch(`${API_BASE_URL}/auth/register-teacher`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ 
-            username: document.getElementById('newTeacherUser').value.trim(), 
-            password: document.getElementById('newTeacherPass').value 
-          })
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${currentAuthToken}` 
+          },
+          body: JSON.stringify({ username, password })
         });
-        if (!response.ok) throw new Error('Failed to register teacher');
-        msg.className = "text-emerald-500 text-xs font-medium"; msg.textContent = "New admin account created!";
-        setTimeout(() => closeModal('teacherModal'), 1500);
-      } catch (err) { msg.className = "text-red-500 text-xs font-medium"; msg.textContent = err.message; }
+        
+        if (!response.ok) throw new Error("Failed to register teacher account");
+        
+        msgDiv.className = "text-emerald-500 font-semibold text-xs";
+        msgDiv.textContent = "Co-Teacher account created successfully!";
+        
+        setTimeout(() => {
+          closeModal('teacherModal');
+          e.target.reset();
+          msgDiv.textContent = "";
+        }, 1200);
+      } catch(err) {
+        msgDiv.className = "text-red-500 font-semibold text-xs";
+        msgDiv.textContent = err.message;
+      }
     }
 
+    /* HANDLE CSV BULK UPLOAD */
+    async function handleCSVUpload(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      
+      // In a production environment, you would parse the CSV here or send as FormData
+      alert(`CSV Upload initiated for: ${file.name}. \nConnect this to your backend bulk import route.`);
+      e.target.value = ""; // Reset the input
+    }
+
+    /* HANDLE LOGOUT */
     function logout() {
-      currentAuthToken = null; selectedStudent = null; loggedInStudent = null;
-      document.getElementById("studentLoginForm").reset();
-      document.getElementById("teacherLoginForm").reset();
+      // Clear session data
+      currentAuthToken = null;
+      loggedInStudent = null;
+      selectedStudent = null;
+      
+      // Reset views
+      document.getElementById("loginCard").classList.remove("hidden");
       document.getElementById("studentDashboardCard").classList.add("hidden");
       document.getElementById("teacherDashboardCard").classList.add("hidden");
-      document.getElementById("studentSettingsView").classList.add("hidden");
-      document.getElementById("teacherBackBtn").classList.add("hidden");
-      document.getElementById("teacherDashboardGradeSection").classList.add("hidden");
-      document.getElementById("studentResultsView").classList.remove("hidden");
-      document.getElementById("loginCard").classList.remove("hidden");
       document.getElementById("logoutBtn").classList.add("hidden");
-      closeModal('firstLoginModal');
+      document.getElementById("teacherDashboardGradeSection").classList.add("hidden");
+      
+      // Clear forms
+      document.getElementById("studentLoginForm").reset();
+      document.getElementById("teacherLoginForm").reset();
+      
+      // Ensure we start back on the student tab
+      switchRole('student');
     }
   </script>
 </body>
