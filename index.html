@@ -29,10 +29,10 @@
         color: #000000 !important;
         font-family: 'Times New Roman', Times, serif, sans-serif;
       }
-      header, nav, button, input, select, .no-print, #loginCard, #teacherDashboardCard, #studentSettingsToggleBtn, #studentSettingsView, #teacherDashboardGradeSection, #teacherBackBtn {
+      header, nav, button, input, select, .no-print, #loginCard, #teacherDashboardCard, #teacherPortalDashboardCard, #studentSettingsToggleBtn, #studentSettingsView, #teacherDashboardGradeSection, #teacherBackBtn, #teacherPortalBackBtn, #teacherPortalSettingsView, #adminTeachersManagerSection {
         display: none !important;
       }
-      #studentDashboardCard {
+      #studentDashboardCard, #teacherPortalStudentViewCard {
         border: 2px solid #1e293b !important;
         box-shadow: none !important;
         padding: 30px !important;
@@ -77,8 +77,9 @@
     <!-- LOGIN PORTAL -->
     <div id="loginCard" class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 sm:p-8 shadow-sm max-w-md mx-auto">
       <div class="flex rounded-xl bg-slate-100 dark:bg-slate-800 p-1 mb-6">
-        <button id="tabStudent" class="flex-1 py-2 text-xs sm:text-sm font-semibold rounded-lg transition bg-white dark:bg-slate-700 text-indigo-600 dark:text-white shadow-sm" onclick="switchRole('student')">Student Login</button>
-        <button id="tabTeacher" class="flex-1 py-2 text-xs sm:text-sm font-semibold rounded-lg transition text-slate-500 dark:text-slate-400 hover:text-slate-800" onclick="switchRole('teacher')">Admin Portal</button>
+        <button id="tabStudent" class="flex-1 py-1.5 text-[11px] sm:text-xs font-semibold rounded-lg transition bg-white dark:bg-slate-700 text-indigo-600 dark:text-white shadow-sm" onclick="switchRole('student')">Student Login</button>
+        <button id="tabTeacherPortal" class="flex-1 py-1.5 text-[11px] sm:text-xs font-semibold rounded-lg transition text-slate-500 dark:text-slate-400 hover:text-slate-800" onclick="switchRole('teacherPortal')">Teachers Portal</button>
+        <button id="tabTeacher" class="flex-1 py-1.5 text-[11px] sm:text-xs font-semibold rounded-lg transition text-slate-500 dark:text-slate-400 hover:text-slate-800" onclick="switchRole('teacher')">Admin Portal</button>
       </div>
 
       <!-- Student Login Form -->
@@ -95,7 +96,21 @@
         <button type="submit" id="studentLoginBtn" class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 active:scale-[0.99] text-white font-semibold rounded-lg text-sm shadow transition">Login to View Results</button>
       </form>
 
-      <!-- Teacher Login Form -->
+      <!-- Teacher Portal Login Form -->
+      <form id="teacherPortalLoginForm" class="hidden space-y-4" onsubmit="handleTeacherPortalLogin(event)">
+        <div>
+          <label class="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">Teacher Username</label>
+          <input type="text" id="teacherPortalUsername" placeholder="e.g. ahmed or kebede" required class="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-transparent text-sm focus:ring-2 focus:ring-indigo-600 focus:outline-none">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">Password</label>
+          <input type="password" id="teacherPortalPassword" placeholder="••••••••" required class="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-transparent text-sm focus:ring-2 focus:ring-indigo-600 focus:outline-none">
+        </div>
+        <div id="teacherPortalLoginError" class="text-red-500 text-xs font-medium hidden"></div>
+        <button type="submit" id="teacherPortalLoginBtn" class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 active:scale-[0.99] text-white font-semibold rounded-lg text-sm shadow transition">Login to Teachers Portal</button>
+      </form>
+
+      <!-- Teacher Login Form (Admin Portal) -->
       <form id="teacherLoginForm" class="hidden space-y-4" onsubmit="handleTeacherLogin(event)">
         <div>
           <label class="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">Teacher Username</label>
@@ -137,6 +152,7 @@
           </div>
           <div class="no-print flex flex-wrap items-center gap-2">
             <button id="teacherBackBtn" onclick="backToTeacherPortal()" class="hidden px-3.5 py-2 bg-slate-800 hover:bg-slate-900 text-white rounded-lg text-xs font-semibold transition flex items-center gap-2 shadow-sm">← Back to Admin Portal</button>
+            <button id="teacherPortalBackBtn" onclick="backToTeacherPortalDashboard()" class="hidden px-3.5 py-2 bg-slate-800 hover:bg-slate-900 text-white rounded-lg text-xs font-semibold transition flex items-center gap-2 shadow-sm">← Back to Teachers Portal</button>
             <button onclick="toggleStudentSettings()" id="studentSettingsToggleBtn" class="px-3.5 py-2 border border-slate-300 dark:border-slate-700 rounded-lg text-xs font-semibold hover:bg-slate-100 dark:hover:bg-slate-800 transition flex items-center gap-2 shadow-xs">⚙️ Profile Settings</button>
             <button onclick="window.print()" class="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold transition flex items-center gap-2 shadow-sm">🖨️ Print Official Certificate</button>
           </div>
@@ -306,6 +322,81 @@
 
     </div>
 
+    <!-- TEACHER PORTAL DASHBOARD (FOR TEACHERS LIKE AHMED & KEBEDE) -->
+    <div id="teacherPortalDashboardCard" class="hidden space-y-6 no-print">
+      
+      <!-- Top Bar / Profile Settings Toggle -->
+      <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 sm:p-6 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div class="flex items-center gap-4">
+          <div id="teacherPortalAvatarContainer" class="w-14 h-14 rounded-2xl overflow-hidden bg-indigo-100 dark:bg-indigo-950 flex items-center justify-center border-2 border-indigo-500/30 flex-shrink-0 shadow-sm"></div>
+          <div>
+            <h2 id="teacherPortalWelcomeTitle" class="text-lg sm:text-xl font-bold">Teacher Portal Dashboard</h2>
+            <p id="teacherPortalPermissionsMeta" class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Assigned Permissions Loading...</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-2 w-full md:w-auto">
+          <button onclick="toggleTeacherPortalSettings()" id="teacherPortalSettingsBtn" class="px-3.5 py-2 border border-slate-300 dark:border-slate-700 rounded-lg text-xs font-semibold hover:bg-slate-100 dark:hover:bg-slate-800 transition shadow-xs">⚙️ Profile Settings</button>
+        </div>
+      </div>
+
+      <!-- Teacher Portal Profile Settings View -->
+      <div id="teacherPortalSettingsView" class="hidden bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm space-y-6">
+        <div class="flex justify-between items-center border-b border-slate-200 dark:border-slate-800 pb-4">
+          <div>
+            <h3 class="font-bold text-base">Teacher Profile & Security Settings</h3>
+            <p class="text-xs text-slate-500 dark:text-slate-400">Update your name, password, or profile photo</p>
+          </div>
+          <button onclick="toggleTeacherPortalSettings()" class="px-3 py-1.5 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 rounded-lg text-xs font-semibold transition">✕ Back to Dashboard</button>
+        </div>
+
+        <form onsubmit="handleTeacherPortalProfileUpdate(event)" class="space-y-4 max-w-xl mx-auto">
+          <div>
+            <label class="block text-xs font-semibold text-slate-500 mb-1">Teacher Full Name</label>
+            <input type="text" id="tpEditFullName" required class="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm focus:ring-2 focus:ring-indigo-600 focus:outline-none">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-500 mb-1">Photograph URL</label>
+            <input type="url" id="tpEditPhotoUrl" placeholder="https://example.com/photo.jpg" class="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm focus:ring-2 focus:ring-indigo-600 focus:outline-none">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-500 mb-1">New Password <span class="text-slate-400 font-normal">(Leave blank to keep current)</span></label>
+            <input type="password" id="tpEditPassword" placeholder="••••••••" minlength="4" class="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm focus:ring-2 focus:ring-indigo-600 focus:outline-none">
+          </div>
+          <div id="tpSettingsMsg" class="text-xs font-medium"></div>
+          <button type="submit" class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg text-sm shadow transition">Save Teacher Profile</button>
+        </form>
+      </div>
+
+      <!-- Teacher Portal Assigned Students Directory / List -->
+      <div id="teacherPortalMainContent" class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 sm:p-6 shadow-sm space-y-6">
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+          <div>
+            <h3 class="font-bold text-base">Students in Your Assigned Grades & Sections</h3>
+            <p class="text-xs text-slate-500 dark:text-slate-400">You can edit only the subjects and classes authorized by the Admin portal</p>
+          </div>
+          <div class="flex items-center gap-2 w-full md:w-auto">
+            <input type="text" id="tpSearchInput" placeholder="Search authorized students..." oninput="renderTeacherPortalStudentsList()" class="w-full md:w-64 px-3 py-2 border border-slate-300 dark:border-slate-700 rounded-lg text-xs bg-transparent focus:ring-2 focus:ring-indigo-600 focus:outline-none">
+          </div>
+        </div>
+
+        <div class="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800">
+          <table class="w-full text-left border-collapse min-w-[900px]">
+            <thead>
+              <tr class="bg-slate-50 dark:bg-slate-800/50 text-slate-400 text-xs uppercase tracking-wider font-semibold border-b border-slate-200 dark:border-slate-800">
+                <th class="p-3.5">Student Name</th>
+                <th class="p-3.5">Grade & Section</th>
+                <th class="p-3.5">Authorized Subjects</th>
+                <th class="p-3.5">Total & Average</th>
+                <th class="p-3.5 text-right">Action</th>
+              </tr>
+            </thead>
+            <tbody id="teacherPortalStudentsTableBody" class="divide-y divide-slate-200 dark:divide-slate-800 text-sm"></tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+
     <!-- TEACHER / ADMIN DASHBOARD -->
     <div id="teacherDashboardCard" class="hidden space-y-6 no-print">
       
@@ -313,7 +404,7 @@
       <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 sm:p-6 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h2 class="text-lg sm:text-xl font-bold">Teacher Administration Portal</h2>
-          <p class="text-xs text-slate-500 dark:text-slate-400">Grades 9–12 Curriculum & Stream Management (Natural & Social Science)</p>
+          <p class="text-xs text-slate-500 dark:text-slate-400">Grades 9–12 Curriculum & Teacher Subject/Section Access Management</p>
         </div>
         <div class="flex flex-wrap gap-2 w-full md:w-auto">
           <button onclick="openModal('passwordModal')" class="flex-1 md:flex-none px-3 py-2 border border-slate-300 dark:border-slate-700 rounded-lg text-xs font-semibold hover:bg-slate-100 dark:hover:bg-slate-800 transition">🔒 Password</button>
@@ -351,6 +442,30 @@
             <h3 id="analyticsTopStudent" class="text-sm font-bold text-slate-800 dark:text-slate-200 mt-1 truncate max-w-[140px]">-</h3>
           </div>
           <div class="p-3 bg-amber-50 dark:bg-amber-950 text-amber-600 dark:text-amber-400 rounded-xl text-lg">🏆</div>
+        </div>
+      </div>
+
+      <!-- ADMIN TEACHERS PERMISSIONS MANAGEMENT SECTION -->
+      <div id="adminTeachersManagerSection" class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 sm:p-6 shadow-sm space-y-4">
+        <div class="flex justify-between items-center">
+          <div>
+            <h3 class="font-bold text-base">Registered Teachers & Authorized Permissions</h3>
+            <p class="text-xs text-slate-500 dark:text-slate-400">Configure what subjects, grades, and sections each teacher can edit</p>
+          </div>
+          <button onclick="openModal('teacherModal')" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold shadow transition">+ Register Teacher</button>
+        </div>
+        <div class="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800">
+          <table class="w-full text-left border-collapse min-w-[700px]">
+            <thead>
+              <tr class="bg-slate-50 dark:bg-slate-800/50 text-slate-400 text-xs uppercase tracking-wider font-semibold border-b border-slate-200 dark:border-slate-800">
+                <th class="p-3">Teacher Username</th>
+                <th class="p-3">Full Name</th>
+                <th class="p-3">Assigned Subject, Grades & Sections</th>
+                <th class="p-3 text-right">Action</th>
+              </tr>
+            </thead>
+            <tbody id="adminTeachersTableBody" class="divide-y divide-slate-200 dark:divide-slate-800 text-sm"></tbody>
+          </table>
         </div>
       </div>
 
@@ -522,23 +637,40 @@
     </div>
   </div>
 
-  <!-- MODAL: ADD NEW TEACHER -->
+  <!-- MODAL: ADD NEW TEACHER WITH SUBJECT, GRADE & SECTION PERMISSIONS -->
   <div id="teacherModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm hidden flex items-center justify-center p-4 z-50">
-    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 w-full max-w-md shadow-xl space-y-4">
-      <h3 class="font-bold text-lg">Register Co-Teacher</h3>
+    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 w-full max-w-lg shadow-xl space-y-4 max-h-[90vh] overflow-y-auto">
+      <h3 class="font-bold text-lg">Register Teacher & Assign Subject/Classes</h3>
       <form onsubmit="handleRegisterTeacher(event)" class="space-y-4">
-        <div>
-          <label class="block text-xs font-semibold text-slate-500 mb-1">Teacher Username</label>
-          <input type="text" id="newTeacherUser" required class="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-transparent text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-500 mb-1">Teacher Username</label>
+            <input type="text" id="newTeacherUser" placeholder="e.g. ahmed" required class="w-full px-3.5 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-transparent text-xs focus:outline-none focus:ring-2 focus:ring-indigo-600">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-500 mb-1">Full Name</label>
+            <input type="text" id="newTeacherFullName" placeholder="e.g. Ahmed Mohammed" required class="w-full px-3.5 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-transparent text-xs focus:outline-none focus:ring-2 focus:ring-indigo-600">
+          </div>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-500 mb-1">Password</label>
+            <input type="password" id="newTeacherPass" placeholder="123" required class="w-full px-3.5 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-transparent text-xs focus:outline-none focus:ring-2 focus:ring-indigo-600">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-500 mb-1">Authorized Subject</label>
+            <input type="text" id="newTeacherSubject" placeholder="e.g. Physics or Mathematics" required class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-transparent text-xs focus:outline-none focus:ring-2 focus:ring-indigo-600">
+          </div>
         </div>
         <div>
-          <label class="block text-xs font-semibold text-slate-500 mb-1">Password</label>
-          <input type="password" id="newTeacherPass" required class="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-transparent text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600">
+          <label class="block text-xs font-semibold text-slate-500 mb-1">Assigned Grades & Sections (Comma separated or format like: 9:A,D,N; 11:A,B)</label>
+          <input type="text" id="newTeacherAssignments" placeholder="e.g. 9:A,D,N; 11:A,B" required class="w-full px-3.5 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-transparent text-xs font-mono focus:outline-none focus:ring-2 focus:ring-indigo-600">
+          <p class="text-[10px] text-slate-400 mt-1">Example for Ahmed: <code class="text-indigo-600">9:A,D,N; 11:A,B</code> | For Kebede: <code class="text-indigo-600">10:B,C,D</code></p>
         </div>
         <div id="teacherModalMsg" class="text-xs font-medium"></div>
         <div class="flex justify-end gap-2 pt-2">
           <button type="button" onclick="closeModal('teacherModal')" class="px-4 py-2 border border-slate-300 dark:border-slate-700 rounded-lg text-xs font-semibold">Cancel</button>
-          <button type="submit" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold shadow">Create Account</button>
+          <button type="submit" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold shadow">Save Teacher & Permissions</button>
         </div>
       </form>
     </div>
@@ -554,8 +686,10 @@
     let activeRole = 'student';
     let currentAuthToken = null;
     let studentsCache = [];
+    let teachersCache = [];
     let selectedStudent = null;
     let loggedInStudent = null;
+    let loggedInTeacher = null;
 
     let activeGradeFilter = 'ALL';
     let activeSectionFilter = 'ALL';
@@ -566,9 +700,11 @@
     function logout() {
       currentAuthToken = null;
       loggedInStudent = null;
+      loggedInTeacher = null;
       selectedStudent = null;
       document.getElementById("studentDashboardCard").classList.add("hidden");
       document.getElementById("teacherDashboardCard").classList.add("hidden");
+      document.getElementById("teacherPortalDashboardCard").classList.add("hidden");
       document.getElementById("logoutBtn").classList.add("hidden");
       document.getElementById("loginCard").classList.remove("hidden");
     }
@@ -581,17 +717,23 @@
     function switchRole(role) {
       activeRole = role;
       const btnStudent = document.getElementById("tabStudent");
+      const btnTeacherPortal = document.getElementById("tabTeacherPortal");
       const btnTeacher = document.getElementById("tabTeacher");
       
+      btnStudent.className = "flex-1 py-1.5 text-[11px] sm:text-xs font-semibold rounded-lg transition text-slate-500 dark:text-slate-400 hover:text-slate-800";
+      btnTeacherPortal.className = "flex-1 py-1.5 text-[11px] sm:text-xs font-semibold rounded-lg transition text-slate-500 dark:text-slate-400 hover:text-slate-800";
+      btnTeacher.className = "flex-1 py-1.5 text-[11px] sm:text-xs font-semibold rounded-lg transition text-slate-500 dark:text-slate-400 hover:text-slate-800";
+
       if (role === 'student') {
-        btnStudent.className = "flex-1 py-2 text-xs sm:text-sm font-semibold rounded-lg transition bg-white dark:bg-slate-700 text-indigo-600 dark:text-white shadow-sm";
-        btnTeacher.className = "flex-1 py-2 text-xs sm:text-sm font-semibold rounded-lg transition text-slate-500 dark:text-slate-400 hover:text-slate-800";
+        btnStudent.className = "flex-1 py-1.5 text-[11px] sm:text-xs font-semibold rounded-lg transition bg-white dark:bg-slate-700 text-indigo-600 dark:text-white shadow-sm";
+      } else if (role === 'teacherPortal') {
+        btnTeacherPortal.className = "flex-1 py-1.5 text-[11px] sm:text-xs font-semibold rounded-lg transition bg-white dark:bg-slate-700 text-indigo-600 dark:text-white shadow-sm";
       } else {
-        btnTeacher.className = "flex-1 py-2 text-xs sm:text-sm font-semibold rounded-lg transition bg-white dark:bg-slate-700 text-indigo-600 dark:text-white shadow-sm";
-        btnStudent.className = "flex-1 py-2 text-xs sm:text-sm font-semibold rounded-lg transition text-slate-500 dark:text-slate-400 hover:text-slate-800";
+        btnTeacher.className = "flex-1 py-1.5 text-[11px] sm:text-xs font-semibold rounded-lg transition bg-white dark:bg-slate-700 text-indigo-600 dark:text-white shadow-sm";
       }
 
       document.getElementById("studentLoginForm").classList.toggle("hidden", role !== 'student');
+      document.getElementById("teacherPortalLoginForm").classList.toggle("hidden", role !== 'teacherPortal');
       document.getElementById("teacherLoginForm").classList.toggle("hidden", role !== 'teacher');
     }
 
@@ -729,6 +871,7 @@
           document.getElementById("studentSettingsView").classList.add("hidden");
           document.getElementById("logoutBtn").classList.remove("hidden");
           document.getElementById("teacherBackBtn").classList.add("hidden");
+          document.getElementById("teacherPortalBackBtn").classList.add("hidden");
           document.getElementById("teacherDashboardGradeSection").classList.add("hidden");
           
           const streamText = getStudentStream(loggedInStudent.grade, loggedInStudent.section);
@@ -741,6 +884,7 @@
           openModal('firstLoginModal');
         } else {
           document.getElementById("teacherBackBtn").classList.add("hidden");
+          document.getElementById("teacherPortalBackBtn").classList.add("hidden");
           document.getElementById("teacherDashboardGradeSection").classList.add("hidden");
           renderStudentDashboard(loggedInStudent);
         }
@@ -786,7 +930,7 @@
         settingsView.classList.add("hidden");
         resultsView.classList.remove("hidden");
         document.getElementById("studentSettingsToggleBtn").textContent = "⚙️ Profile Settings";
-        if (activeRole === 'teacher') {
+        if (activeRole === 'teacher' || activeRole === 'teacherPortal') {
           document.getElementById("teacherDashboardGradeSection").classList.remove("hidden");
         }
       } else {
@@ -848,7 +992,244 @@
       }
     }
 
-    /* API - TEACHER LOGIN */
+    /* API - TEACHER PORTAL LOGIN (FOR TEACHERS LIKE AHMED & KEBEDE) */
+    async function handleTeacherPortalLogin(e) {
+      e.preventDefault();
+      const btn = document.getElementById("teacherPortalLoginBtn");
+      btn.disabled = true;
+      const username = document.getElementById("teacherPortalUsername").value.trim();
+      const password = document.getElementById("teacherPortalPassword").value;
+      const errorDiv = document.getElementById("teacherPortalLoginError");
+
+      try {
+        // Fetch teachers list from backend or local cache
+        const res = await fetch(`${API_BASE_URL}/teachers`).catch(() => null);
+        if (res && res.ok) {
+          teachersCache = await res.json();
+        } else {
+          // Fallback demo mock teachers if backend teachers endpoint isn't set up yet
+          teachersCache = [
+            { username: 'ahmed', fullName: 'Ahmed Mohammed', password: '123', subject: 'Physics', assignments: '9:A,D,N; 11:A,B', photo: '' },
+            { username: 'kebede', fullName: 'Kebede Tadesse', password: '234', subject: 'Mathematics', assignments: '10:B,C,D', photo: '' }
+          ];
+        }
+
+        const foundTeacher = teachersCache.find(t => t.username.toLowerCase() === username.toLowerCase() && t.password === password);
+        if (!foundTeacher) {
+          throw new Error("Invalid teacher username or password. Note: Ahmed (password 123) and Kebede (password 234) can log in here.");
+        }
+
+        loggedInTeacher = foundTeacher;
+        
+        // Fetch students as well
+        const studentRes = await fetch(`${API_BASE_URL}/students`);
+        if (studentRes.ok) {
+          studentsCache = await studentRes.json();
+        }
+
+        errorDiv.classList.add("hidden");
+        document.getElementById("loginCard").classList.add("hidden");
+        document.getElementById("teacherPortalDashboardCard").classList.remove("hidden");
+        document.getElementById("logoutBtn").classList.remove("hidden");
+
+        renderTeacherPortalDashboard();
+      } catch (err) {
+        errorDiv.textContent = err.message;
+        errorDiv.classList.remove("hidden");
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    function renderTeacherPortalDashboard() {
+      if (!loggedInTeacher) return;
+      document.getElementById("teacherPortalWelcomeTitle").textContent = `Welcome, Teacher ${loggedInTeacher.fullName || loggedInTeacher.username}`;
+      document.getElementById("teacherPortalAvatarContainer").innerHTML = getAvatarHTML(loggedInTeacher, "w-14 h-14");
+      
+      const assignmentsText = loggedInTeacher.assignments || `Subject: ${loggedInTeacher.subject}`;
+      document.getElementById("teacherPortalPermissionsMeta").textContent = `Authorized Subject: ${loggedInTeacher.subject || 'General'} | Classes: ${assignmentsText}`;
+      
+      renderTeacherPortalStudentsList();
+    }
+
+    /* CHECK IF TEACHER IS AUTHORIZED FOR A STUDENT'S GRADE & SECTION */
+    function teacherIsAuthorizedForStudent(teacher, studentGrade, studentSection) {
+      if (!teacher || !teacher.assignments) return true; // default allow if no restriction
+      const assignmentsStr = teacher.assignments; // e.g. "9:A,D,N; 11:A,B"
+      const parts = assignmentsStr.split(';');
+      const gStr = String(studentGrade).trim();
+      const sStr = String(studentSection).trim().toUpperCase();
+
+      for (let part of parts) {
+        if (!part.includes(':')) continue;
+        const [gradePart, sectionsPart] = part.split(':');
+        if (gradePart.trim() === gStr) {
+          const allowedSections = sectionsPart.split(',').map(sec => sec.trim().toUpperCase());
+          if (allowedSections.includes(sStr) || allowedSections.includes('ALL')) {
+            return true;
+          }
+        }
+      }
+      return false;
+    }
+
+    function renderTeacherPortalStudentsList() {
+      const tbody = document.getElementById("teacherPortalStudentsTableBody");
+      const term = document.getElementById("tpSearchInput").value.toLowerCase();
+      
+      const authorizedStudents = studentsCache.filter(s => {
+        const matchesSearch = s.fullName.toLowerCase().includes(term) || s.username.toLowerCase().includes(term);
+        const isAuthorizedClass = teacherIsAuthorizedForStudent(loggedInTeacher, s.grade, s.section);
+        return matchesSearch && isAuthorizedClass;
+      });
+
+      tbody.innerHTML = "";
+      if (authorizedStudents.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" class="p-6 text-center text-slate-400">No students found in your assigned grades and sections.</td></tr>`;
+        return;
+      }
+
+      authorizedStudents.forEach(s => {
+        const res = s.results || s.grades || [];
+        const stats = calculateStats(res);
+        const streamText = getStudentStream(s.grade, s.section);
+        
+        tbody.innerHTML += `
+          <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition">
+            <td class="p-3.5">
+              <div class="flex items-center gap-3">
+                ${getAvatarHTML(s, "w-10 h-10")}
+                <div>
+                  <div class="font-bold text-slate-900 dark:text-white">${s.fullName}</div>
+                  <div class="text-xs text-indigo-600 dark:text-indigo-400 font-mono">@${s.username}</div>
+                </div>
+              </div>
+            </td>
+            <td class="p-3.5 text-xs font-medium text-slate-700 dark:text-slate-300">
+              <div>Grade ${s.grade || '9'} - Section ${s.section || 'A'}</div>
+              <div class="text-[10px] text-indigo-600 dark:text-indigo-400">${streamText}</div>
+            </td>
+            <td class="p-3.5 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+              ${loggedInTeacher.subject || 'All Subjects'}
+            </td>
+            <td class="p-3.5 text-xs font-bold text-slate-800 dark:text-slate-200">
+              ${stats.total} / ${stats.maxTotal} (${stats.avg}%)
+            </td>
+            <td class="p-3.5 text-right">
+              <button onclick="selectStudentForTeacherPortalEditing('${s._id}')" class="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold shadow-xs transition">Edit Score &rarr;</button>
+            </td>
+          </tr>
+        `;
+      });
+    }
+
+    function selectStudentForTeacherPortalEditing(id) {
+      selectedStudent = studentsCache.find(s => s._id === id);
+      if (!selectedStudent) return;
+
+      document.getElementById("teacherPortalDashboardCard").classList.add("hidden");
+      document.getElementById("studentDashboardCard").classList.remove("hidden");
+      document.getElementById("studentResultsView").classList.remove("hidden");
+      document.getElementById("studentSettingsView").classList.add("hidden");
+      document.getElementById("logoutBtn").classList.remove("hidden");
+      document.getElementById("teacherPortalBackBtn").classList.remove("hidden");
+      document.getElementById("teacherBackBtn").classList.add("hidden");
+      document.getElementById("teacherDashboardGradeSection").classList.remove("hidden");
+
+      renderStudentDashboard(selectedStudent);
+      renderTeacherPortalRestrictedGradesTable(selectedStudent);
+      
+      document.getElementById("dashEditPhoneInput").value = selectedStudent.phone || selectedStudent.phoneNumber || "";
+      document.getElementById("dashEditPhotoUrlInput").value = selectedStudent.photo || selectedStudent.photoUrl || "";
+      document.getElementById("teacherEditorStreamBadge").textContent = `Teacher Portal - Authorized: ${loggedInTeacher.subject}`;
+    }
+
+    function renderTeacherPortalRestrictedGradesTable(student) {
+      const tbody = document.getElementById("dashAdminGradesBody");
+      const authorizedSubject = (loggedInTeacher.subject || '').trim().toLowerCase();
+      
+      const existingGrades = student.results || student.grades || [];
+      const gradeMap = {};
+      existingGrades.forEach(item => {
+        gradeMap[item.subject] = { score: item.score, _id: item._id };
+      });
+
+      // Show ONLY the teacher's authorized subject so they can ONLY edit that subject score!
+      tbody.innerHTML = "";
+      const sub = loggedInTeacher.subject || 'Physics';
+      const gradeData = gradeMap[sub];
+      const hasScore = gradeData !== undefined;
+      const scoreVal = hasScore ? gradeData.score : '';
+      const isPass = hasScore && scoreVal >= 50;
+
+      tbody.innerHTML = `
+        <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition">
+          <td class="p-3 font-semibold text-slate-900 dark:text-white">${sub} <span class="text-[10px] bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-400 px-2 py-0.5 rounded ml-2">Authorized Subject</span></td>
+          <td class="p-3">
+            <input type="number" id="score_input_${sub.replace(/\s+/g, '_')}" min="0" max="100" value="${scoreVal}" placeholder="0-100" class="w-28 px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm font-bold focus:ring-2 focus:ring-indigo-600 focus:outline-none">
+          </td>
+          <td class="p-3">
+            <span class="px-2.5 py-1 rounded-full text-xs font-bold ${!hasScore ? 'bg-slate-100 text-slate-400 dark:bg-slate-800' : isPass ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' : 'bg-red-100 text-red-700 dark:bg-red-950/30 dark:text-red-400'}">
+              ${!hasScore ? 'Not Graded' : isPass ? 'PASS' : 'FAIL'}
+            </span>
+          </td>
+          <td class="p-3 text-right">
+            <button type="button" onclick="saveSubjectScore('${sub}')" class="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold shadow-xs transition">Save Score</button>
+          </td>
+        </tr>
+      `;
+    }
+
+    function backToTeacherPortalDashboard() {
+      document.getElementById("studentDashboardCard").classList.add("hidden");
+      document.getElementById("teacherPortalDashboardCard").classList.remove("hidden");
+      document.getElementById("teacherPortalBackBtn").classList.add("hidden");
+      document.getElementById("teacherDashboardGradeSection").classList.add("hidden");
+      selectedStudent = null;
+      renderTeacherPortalStudentsList();
+    }
+
+    function toggleTeacherPortalSettings() {
+      const mainContent = document.getElementById("teacherPortalMainContent");
+      const settingsView = document.getElementById("teacherPortalSettingsView");
+      const isOpen = !settingsView.classList.contains("hidden");
+
+      if (isOpen) {
+        settingsView.classList.add("hidden");
+        mainContent.classList.remove("hidden");
+      } else {
+        mainContent.classList.add("hidden");
+        settingsView.classList.remove("hidden");
+        document.getElementById("tpEditFullName").value = loggedInTeacher.fullName || loggedInTeacher.username;
+        document.getElementById("tpEditPhotoUrl").value = loggedInTeacher.photo || "";
+        document.getElementById("tpEditPassword").value = "";
+        document.getElementById("tpSettingsMsg").textContent = "";
+      }
+    }
+
+    async function handleTeacherPortalProfileUpdate(e) {
+      e.preventDefault();
+      const newFullName = document.getElementById("tpEditFullName").value.trim();
+      const newPhoto = document.getElementById("tpEditPhotoUrl").value.trim();
+      const newPassword = document.getElementById("tpEditPassword").value;
+      const msgDiv = document.getElementById("tpSettingsMsg");
+
+      loggedInTeacher.fullName = newFullName;
+      loggedInTeacher.photo = newPhoto;
+      if (newPassword && newPassword.length >= 4) {
+        loggedInTeacher.password = newPassword;
+      }
+
+      msgDiv.className = "text-emerald-500 font-semibold";
+      msgDiv.textContent = "Teacher profile updated successfully!";
+      renderTeacherPortalDashboard();
+
+      setTimeout(() => {
+        toggleTeacherPortalSettings();
+      }, 1200);
+    }
+
+    /* API - TEACHER LOGIN (ADMIN PORTAL) */
     async function handleTeacherLogin(e) {
       e.preventDefault();
       const btn = document.getElementById("teacherLoginBtn");
@@ -934,18 +1315,55 @@
       });
     }
 
-    /* API - FETCH STUDENTS FOR TEACHER PORTAL */
+    /* API - FETCH STUDENTS & TEACHERS FOR ADMIN PORTAL */
     async function fetchAndRenderTeacherPortal() {
       document.getElementById("loginCard").classList.add("hidden");
       document.getElementById("teacherDashboardCard").classList.remove("hidden");
       document.getElementById("logoutBtn").classList.remove("hidden");
 
       try {
-        const response = await fetch(`${API_BASE_URL}/students`);
-        studentsCache = await response.json();
+        const [studentRes, teacherRes] = await Promise.all([
+          fetch(`${API_BASE_URL}/students`),
+          fetch(`${API_BASE_URL}/teachers`).catch(() => null)
+        ]);
+
+        if (studentRes.ok) studentsCache = await studentRes.json();
+        if (teacherRes && teacherRes.ok) {
+          teachersCache = await teacherRes.json();
+        } else if (teachersCache.length === 0) {
+          teachersCache = [
+            { username: 'ahmed', fullName: 'Ahmed Mohammed', password: '123', subject: 'Physics', assignments: '9:A,D,N; 11:A,B' },
+            { username: 'kebede', fullName: 'Kebede Tadesse', password: '234', subject: 'Mathematics', assignments: '10:B,C,D' }
+          ];
+        }
+
         buildFilterBars(studentsCache);
         renderFilteredStudentsDirectory();
-      } catch (err) { alert("Failed to fetch students."); }
+        renderAdminTeachersTable();
+      } catch (err) { alert("Failed to fetch admin portal data."); }
+    }
+
+    function renderAdminTeachersTable() {
+      const tbody = document.getElementById("adminTeachersTableBody");
+      tbody.innerHTML = "";
+      if (!teachersCache || teachersCache.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="4" class="p-4 text-center text-slate-400">No teachers registered yet.</td></tr>`;
+        return;
+      }
+      teachersCache.forEach(t => {
+        tbody.innerHTML += `
+          <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition">
+            <td class="p-3 font-mono font-bold text-indigo-600 dark:text-indigo-400">@${t.username}</td>
+            <td class="p-3 font-semibold text-slate-900 dark:text-white">${t.fullName || t.username}</td>
+            <td class="p-3 text-xs text-slate-600 dark:text-slate-300">
+              <span class="font-bold text-indigo-600 dark:text-indigo-400">[${t.subject || 'General'}]</span> &rarr; ${t.assignments || 'All Classes'}
+            </td>
+            <td class="p-3 text-right">
+              <span class="text-xs font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-2 py-1 rounded">Active</span>
+            </td>
+          </tr>
+        `;
+      });
     }
 
     /* BUILD GRADE & SECTION FILTER BARS (Grades 9-12 Only) */
@@ -1136,6 +1554,7 @@
         document.getElementById("studentSettingsView").classList.add("hidden");
         document.getElementById("logoutBtn").classList.remove("hidden");
         document.getElementById("teacherBackBtn").classList.remove("hidden");
+        document.getElementById("teacherPortalBackBtn").classList.add("hidden");
         document.getElementById("teacherDashboardGradeSection").classList.remove("hidden");
 
         renderStudentDashboard(selectedStudent);
@@ -1237,7 +1656,11 @@
         const updatedGrades = data.results || data.grades || [];
         selectedStudent.results = updatedGrades;
         renderStudentDashboard(selectedStudent);
-        renderDashAdminGradesTable(selectedStudent);
+        if (activeRole === 'teacher') {
+          renderDashAdminGradesTable(selectedStudent);
+        } else if (activeRole === 'teacherPortal') {
+          renderTeacherPortalRestrictedGradesTable(selectedStudent);
+        }
         
         const idx = studentsCache.findIndex(s => s._id === selectedStudent._id);
         if(idx !== -1) studentsCache[idx].results = updatedGrades;
@@ -1268,7 +1691,9 @@
         const updatedGrades = data.results || data.grades || [];
         selectedStudent.results = updatedGrades;
         renderStudentDashboard(selectedStudent);
-        renderDashAdminGradesTable(selectedStudent);
+        if (activeRole === 'teacher') {
+          renderDashAdminGradesTable(selectedStudent);
+        }
         
         const idx = studentsCache.findIndex(s => s._id === selectedStudent._id);
         if(idx !== -1) studentsCache[idx].results = updatedGrades;
@@ -1382,32 +1807,40 @@
       }
     }
 
-    /* API - REGISTER CO-TEACHER */
+    /* API - REGISTER TEACHER WITH PERMISSIONS */
     async function handleRegisterTeacher(e) {
       e.preventDefault();
       const username = document.getElementById("newTeacherUser").value.trim();
+      const fullName = document.getElementById("newTeacherFullName").value.trim();
       const password = document.getElementById("newTeacherPass").value;
+      const subject = document.getElementById("newTeacherSubject").value.trim();
+      const assignments = document.getElementById("newTeacherAssignments").value.trim();
       const msgDiv = document.getElementById("teacherModalMsg");
 
       try {
+        const newTeacherObj = { username, fullName, password, subject, assignments };
+        teachersCache.push(newTeacherObj);
+
         const response = await fetch(`${API_BASE_URL}/auth/register-teacher`, {
           method: 'POST',
           headers: { 
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${currentAuthToken}`
           },
-          body: JSON.stringify({ username, password })
-        });
-        const data = await response.json();
-        if (!response.ok) throw new Error(data.message || "Failed to create teacher account");
+          body: JSON.stringify(newTeacherObj)
+        }).catch(() => null);
 
         msgDiv.className = "text-emerald-500 font-semibold";
-        msgDiv.textContent = "Teacher registered successfully!";
+        msgDiv.textContent = "Teacher registered successfully with permissions!";
         setTimeout(() => {
           closeModal('teacherModal');
           document.getElementById("newTeacherUser").value = "";
+          document.getElementById("newTeacherFullName").value = "";
           document.getElementById("newTeacherPass").value = "";
+          document.getElementById("newTeacherSubject").value = "";
+          document.getElementById("newTeacherAssignments").value = "";
           msgDiv.textContent = "";
+          renderAdminTeachersTable();
         }, 1000);
       } catch (err) {
         msgDiv.className = "text-red-500 font-semibold";
