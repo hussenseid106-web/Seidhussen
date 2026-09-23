@@ -24,18 +24,14 @@ const getRequiredSubjects = (grade, section) => {
     return ['Amharic', 'English', 'Mathematics', 'Physics', 'Chemistry', 'Biology', 'Geography', 'History', 'Economics', 'Civics', 'IT', 'Sport', 'Art'];
   } else if (g === '11' || g === '12') {
     if (sec === 'A' || sec === 'B') {
-      // Natural Science Stream
       return ['Amharic', 'English', 'Mathematics', 'Physics', 'Chemistry', 'Biology', 'Agriculture', 'IT', 'Web Design'];
     } else if (sec === 'C' || sec === 'D') {
-      // Social Science Stream
       return ['Amharic', 'English', 'Mathematics', 'Geography', 'History', 'IT', 'Economics', 'Journalism'];
     }
   }
-  // Default General fallback
   return ['Amharic', 'English', 'Mathematics', 'Physics', 'Chemistry', 'Biology', 'Geography', 'History', 'Economics', 'Civics', 'IT', 'Sport', 'Art'];
 };
 
-// Helper function to calculate letter grade automatically
 const calculateGrade = (score) => {
   const s = Number(score) || 0;
   if (s >= 90) return 'A';
@@ -50,7 +46,7 @@ const calculateGrade = (score) => {
 // DATABASE SCHEMAS & MODELS
 // ==========================================
 const studentSchema = new mongoose.Schema({
-  username: { type: String, required: true, unique: true }, // Student First Name / ID
+  username: { type: String, required: true, unique: true },
   password: { type: String, required: true },
   fullName: { type: String, required: true },
   grade: { type: String, default: '11' },
@@ -70,7 +66,17 @@ const studentSchema = new mongoose.Schema({
 
 const teacherSchema = new mongoose.Schema({
   username: { type: String, required: true, unique: true },
-  password: { type: String, required: true }
+  password: { type: String, required: true },
+  fullName: { type: String, default: '' },
+  photo: { type: String, default: '' },
+  isAdmin: { type: Boolean, default: false }, // true for Super Admin, false for restricted teachers
+  assignments: [
+    {
+      subject: { type: String, required: true },
+      grades: [{ type: String }],    // e.g. ["9", "11"]
+      sections: [{ type: String }]   // e.g. ["A", "D", "N"]
+    }
+  ]
 });
 
 const Student = mongoose.model('Student', studentSchema);
@@ -94,7 +100,7 @@ app.post('/api/auth/student-login', async (req, res) => {
   }
 });
 
-// 2. Teacher Login
+// 2. Admin Login
 app.post('/api/auth/teacher-login', async (req, res) => {
   try {
     const { username, password } = req.body;
@@ -102,36 +108,96 @@ app.post('/api/auth/teacher-login', async (req, res) => {
     if (!teacher || teacher.password !== password) {
       return res.status(401).json({ message: "Invalid admin credentials" });
     }
-    res.json({ token: "sample-teacher-token", teacher });
+    res.json({ token: "sample-admin-token", teacher });
   } catch (err) {
     res.status(500).json({ message: "Server error", error: err.message });
   }
 });
 
-// 3. Register a new co-teacher / admin
-app.post('/api/auth/register-teacher', async (req, res) => {
+// 3. Teacher Portal Login (Restricted Teacher)
+app.post('/api/auth/portal-teacher-login', async (req, res) => {
   try {
     const { username, password } = req.body;
+    const teacher = await Teacher.findOne({ username });
+    if (!teacher || teacher.password !== password) {
+      return res.status(401).json({ message: "Invalid teacher username or password" });
+    }
+    res.json({ token: "sample-portal-teacher-token", teacher });
+  } catch (err) {
+    res.status(500).json({ message: "Server error", error: err.message });
+  }
+});
+
+// 4. Register a new teacher with specific subject, grade & section assignments
+app.post('/api/auth/register-teacher', async (req, res) => {
+  try {
+    const { username, password, fullName, photo, assignments, isAdmin } = req.body;
     const existingTeacher = await Teacher.findOne({ username });
     if (existingTeacher) {
       return res.status(400).json({ message: "Teacher username already exists." });
     }
-    const newTeacher = new Teacher({ username, password });
+    const newTeacher = new Teacher({ 
+      username, 
+      password, 
+      fullName: fullName || username,
+      photo: photo || '',
+      isAdmin: isAdmin !== undefined ? isAdmin : false,
+      assignments: assignments || [] 
+    });
     await newTeacher.save();
-    res.status(201).json({ message: "Teacher registered successfully." });
+    res.status(201).json({ message: "Teacher registered successfully.", teacher: newTeacher });
   } catch (error) {
     res.status(500).json({ message: "Server error creating teacher.", error: error.message });
   }
 });
 
-// 4. Change Teacher Password
+// 5. Update Teacher Profile or Assignments
+app.put('/api/teachers/:id', async (req, res) => {
+  try {
+    const { fullName, password, photo, assignments } = req.body;
+    const teacher = await Teacher.findById(req.params.id);
+    if (!teacher) return res.status(404).json({ message: "Teacher not found" });
+
+    if (fullName !== undefined) teacher.fullName = fullName;
+    if (password !== undefined) teacher.password = password;
+    if (photo !== undefined) teacher.photo = photo;
+    if (assignments !== undefined) teacher.assignments = assignments;
+
+    await teacher.save();
+    res.json({ message: "Teacher updated successfully", teacher });
+  } catch (err) {
+    res.status(500).json({ message: "Server error", error: err.message });
+  }
+});
+
+// 6. Get all teachers
+app.get('/api/teachers', async (req, res) => {
+  try {
+    const teachers = await Teacher.find();
+    res.json(teachers);
+  } catch (err) {
+    res.status(500).json({ message: "Server error", error: err.message });
+  }
+});
+
+// 7. Delete Teacher Account
+app.delete('/api/teachers/:id', async (req, res) => {
+  try {
+    const deleted = await Teacher.findByIdAndDelete(req.params.id);
+    if (!deleted) return res.status(404).json({ message: "Teacher not found" });
+    res.json({ message: "Teacher deleted successfully" });
+  } catch (err) {
+    res.status(500).json({ message: "Server error", error: err.message });
+  }
+});
+
+// 8. Change Admin Password
 app.post('/api/auth/change-password', async (req, res) => {
   try {
     const { oldPassword, newPassword } = req.body;
-    // Update the primary admin account or the first found teacher account
-    const teacher = await Teacher.findOne();
+    const teacher = await Teacher.findOne({ isAdmin: true }) || await Teacher.findOne();
     if (!teacher) {
-      return res.status(404).json({ message: "Teacher account not found." });
+      return res.status(404).json({ message: "Admin account not found." });
     }
     if (teacher.password !== oldPassword) {
       return res.status(401).json({ message: "Incorrect current password." });
@@ -148,7 +214,6 @@ app.post('/api/auth/change-password', async (req, res) => {
 // STUDENT & GRADE MANAGEMENT ROUTES
 // ==========================================
 
-// 5. Get all students
 app.get('/api/students', async (req, res) => {
   try {
     const students = await Student.find();
@@ -158,7 +223,6 @@ app.get('/api/students', async (req, res) => {
   }
 });
 
-// 6. Register a single student with grade-specific subjects, phone, and photo
 app.post('/api/students', async (req, res) => {
   try {
     const { username, fullName, password, grade, section, phone, photo, isFirstLogin } = req.body;
@@ -197,7 +261,6 @@ app.post('/api/students', async (req, res) => {
   }
 });
 
-// 7. Update Student Profile, Contact Info, Password, or Results List
 app.put('/api/students/:id', async (req, res) => {
   try {
     const { password, results, fullName, phone, photo, isFirstLogin, mustChangePassword } = req.body;
@@ -211,7 +274,6 @@ app.put('/api/students/:id', async (req, res) => {
     if (isFirstLogin !== undefined) student.isFirstLogin = isFirstLogin;
     if (mustChangePassword !== undefined) student.mustChangePassword = mustChangePassword;
 
-    // Update results list if provided (recalculating letter grades automatically)
     if (results && Array.isArray(results)) {
       student.results = results.map(item => ({
         subject: item.subject,
@@ -227,7 +289,6 @@ app.put('/api/students/:id', async (req, res) => {
   }
 });
 
-// 8. Add or Update a Single Subject Score
 app.put('/api/students/:id/grades', async (req, res) => {
   try {
     const { subject, score } = req.body;
@@ -251,21 +312,6 @@ app.put('/api/students/:id/grades', async (req, res) => {
   }
 });
 
-// 9. Delete a specific subject grade item
-app.delete('/api/students/:id/grades/:subjectId', async (req, res) => {
-  try {
-    const student = await Student.findById(req.params.id);
-    if (!student) return res.status(404).json({ message: "Student not found" });
-
-    student.results = student.results.filter(r => r._id.toString() !== req.params.subjectId);
-    await student.save();
-    res.json(student);
-  } catch (err) {
-    res.status(500).json({ message: "Server error", error: err.message });
-  }
-});
-
-// 10. Delete Student Record Completely
 app.delete('/api/students/:id', async (req, res) => {
   try {
     const deletedStudent = await Student.findByIdAndDelete(req.params.id);
