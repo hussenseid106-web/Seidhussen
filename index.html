@@ -1116,6 +1116,16 @@
     async function handleTeacherLogin(e) {
       e.preventDefault();
       const btn = document.getElementById("teacherLoginBtn");
+      const usernameInput = document.getElementById("adminUsername").value.trim().toLowerCase();
+      const errorDiv = document.getElementById("teacherLoginError");
+
+      // Restriction check for Seid and Ahmed
+      if (usernameInput === "seid" || usernameInput === "ahmed") {
+        errorDiv.textContent = "Access Restricted: Teacher accounts ('seid', 'ahmed') must log in via the Teacher Portal tab.";
+        errorDiv.classList.remove("hidden");
+        return;
+      }
+
       btn.disabled = true;
       try {
         const response = await fetch(`${API_BASE_URL}/auth/teacher-login`, {
@@ -1133,7 +1143,6 @@
         await fetchAdminData();
         renderAdminDashboard();
       } catch (err) {
-        const errorDiv = document.getElementById("teacherLoginError");
         errorDiv.textContent = err.message;
         errorDiv.classList.remove("hidden");
       } finally { btn.disabled = false; }
