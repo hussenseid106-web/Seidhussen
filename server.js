@@ -1,334 +1,656 @@
-const express = require('express');
-const mongoose = require('mongoose');
-const cors = require('cors');
-
-const app = express();
-app.use(express.json());
-app.use(cors());
-
-// MongoDB Connection
-const MONGO_URI = process.env.MONGO_URI || "YOUR_MONGODB_ATLAS_CONNECTION_STRING";
-
-mongoose.connect(MONGO_URI)
-  .then(() => console.log("Connected to MongoDB Atlas successfully"))
-  .catch(err => console.error("MongoDB connection error:", err));
-
-// ==========================================
-// DYNAMIC SUBJECT RULES (Grades 9-12 & Streams)
-// ==========================================
-const getRequiredSubjects = (grade, section) => {
-  const g = String(grade || '').trim();
-  const sec = String(section || 'A').toUpperCase().trim();
+    async function fetchAndRenderTeacherPortal() {  
+      document.getElementById("loginCard").classList.add("hidden");  
+      document.getElementById("teacherDashboardCard").classList.remove("hidden");  
+      document.getElementById("logoutBtn").classList.remove("hidden");  
   
-  if (g === '9' || g === '10') {
-    return ['Amharic', 'English', 'Mathematics', 'Physics', 'Chemistry', 'Biology', 'Geography', 'History', 'Economics', 'Civics', 'IT', 'Sport', 'Art'];
-  } else if (g === '11' || g === '12') {
-    if (sec === 'A' || sec === 'B') {
-      return ['Amharic', 'English', 'Mathematics', 'Physics', 'Chemistry', 'Biology', 'Agriculture', 'IT', 'Web Design'];
-    } else if (sec === 'C' || sec === 'D') {
-      return ['Amharic', 'English', 'Mathematics', 'Geography', 'History', 'IT', 'Economics', 'Journalism'];
-    }
-  }
-  return ['Amharic', 'English', 'Mathematics', 'Physics', 'Chemistry', 'Biology', 'Geography', 'History', 'Economics', 'Civics', 'IT', 'Sport', 'Art'];
-};
+      try {  
+        const [studentsRes, teachersRes] = await Promise.all([  
+          fetch(`${API_BASE_URL}/students`, { headers: { 'Authorization': `Bearer ${currentAuthToken}` } }),  
+          fetch(`${API_BASE_URL}/teachers`, { headers: { 'Authorization': `Bearer ${currentAuthToken}` } })  
+        ]);  
+        if (studentsRes.ok) studentsCache = await studentsRes.json();  
+        if (teachersRes.ok) teachersCache = await teachersRes.json();  
+      } catch (err) {  
+        console.error("Error fetching data:", err);  
+      }  
+  
+      renderAdminDashboard();  
+    }  
 
-const calculateGrade = (score) => {
-  const s = Number(score) || 0;
-  if (s >= 90) return 'A';
-  if (s >= 80) return 'B';
-  if (s >= 70) return 'C';
-  if (s >= 60) return 'D';
-  if (s >= 50) return 'E';
-  return 'F';
-};
+    function renderAdminDashboard() {  
+      renderAdminTeachersTable();  
+      renderGradeFilterBar();  
+      renderSectionFilterBar();  
+      filterStudentsDirectory();  
+    }  
 
-// ==========================================
-// DATABASE SCHEMAS & MODELS
-// ==========================================
-const studentSchema = new mongoose.Schema({
-  username: { type: String, required: true, unique: true },
-  password: { type: String, required: true },
-  fullName: { type: String, required: true },
-  grade: { type: String, default: '11' },
-  section: { type: String, default: 'A' },
-  phone: { type: String, default: '' },
-  photo: { type: String, default: '' },
-  isFirstLogin: { type: Boolean, default: true },
-  mustChangePassword: { type: Boolean, default: true },
-  results: [
-    {
-      subject: { type: String, required: true },
-      score: { type: Number, required: true, default: 0 },
-      grade: { type: String, default: '-' }
-    }
-  ]
-});
+    function renderAdminTeachersTable() {  
+      const tbody = document.getElementById("adminTeachersTableBody");  
+      tbody.innerHTML = "";  
+      if (!teachersCache || teachersCache.length === 0) {  
+        tbody.innerHTML = `<tr><td colspan="4" class="p-4 text-center text-slate-400">No registered teachers found.</td></tr>`;  
+        return;  
+      }  
+      teachersCache.forEach(t => {  
+        const assignmentsStr = (t.assignments || []).map(a =>   
+          `<span class="inline-block bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 px-2 py-0.5 rounded text-xs font-semibold mr-1 mb-1 border border-indigo-200 dark:border-indigo-900">${a.subject} (Grades: ${a.grades ? a.grades.join(',') : ''} | Sec: ${a.sections ? a.sections.join(',') : ''})</span>`  
+        ).join('') || '<span class="text-slate-400 text-xs">None</span>';  
+  
+        tbody.innerHTML += `  
+          <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition">  
+            <td class="p-3">  
+              <div class="flex items-center gap-2">  
+                ${getAvatarHTML(t, "w-8 h-8")}  
+                <div>  
+                  <div class="font-bold text-slate-900 dark:text-white">${t.fullName || t.username}</div>  
+                  <div class="text-xs text-slate-400 font-mono">@${t.username}</div>  
+                </div>  
+              </div>  
+            </td>  
+            <td class="p-3 font-mono text-xs">${t.username} / <span class="text-slate-400">${t.password ? '••••••••' : 'N/A'}</span></td>  
+            <td class="p-3">${assignmentsStr}</td>  
+            <td class="p-3 text-right">  
+              <button onclick="deleteTeacher('${t._id}')" class="px-2.5 py-1 bg-red-100 hover:bg-red-200 dark:bg-red-950 dark:hover:bg-red-900 text-red-600 dark:text-red-400 rounded text-xs font-semibold transition">Delete</button>  
+            </td>  
+          </tr>  
+        `;  
+      });  
+    }  
 
-const teacherSchema = new mongoose.Schema({
-  username: { type: String, required: true, unique: true },
-  password: { type: String, required: true },
-  fullName: { type: String, default: '' },
-  photo: { type: String, default: '' },
-  isAdmin: { type: Boolean, default: false }, 
-  assignments: [
-    {
-      subject: { type: String, required: true },
-      grades: [{ type: String }],
-      sections: [{ type: String }]
-    }
-  ]
-});
+    function renderGradeFilterBar() {  
+      const bar = document.getElementById("gradeFilterBar");  
+      const grades = ['ALL', '9', '10', '11', '12'];  
+      bar.innerHTML = grades.map(g => {  
+        const isActive = activeGradeFilter === g;  
+        const activeClass = isActive ? 'bg-indigo-600 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200';  
+        return `<button onclick="setGradeFilter('${g}')" class="px-3 py-1 rounded-lg text-xs font-semibold transition ${activeClass}">${g === 'ALL' ? 'All Grades' : 'Grade ' + g}</button>`;  
+      }).join('');  
+    }  
 
-const Student = mongoose.model('Student', studentSchema);
-const Teacher = mongoose.model('Teacher', teacherSchema);
+    function setGradeFilter(grade) {  
+      activeGradeFilter = grade;  
+      renderGradeFilterBar();  
+      filterStudentsDirectory();  
+    }  
 
-// ==========================================
-// AUTHENTICATION & TEACHER ROUTES
-// ==========================================
+    function renderSectionFilterBar() {  
+      const bar = document.getElementById("sectionFilterBar");  
+      const sections = ['ALL', 'A', 'B', 'C', 'D'];  
+      bar.innerHTML = sections.map(s => {  
+        const isActive = activeSectionFilter === s;  
+        const activeClass = isActive ? 'bg-indigo-600 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200';  
+        return `<button onclick="setSectionFilter('${s}')" class="px-3 py-1 rounded-lg text-xs font-semibold transition ${activeClass}">${s === 'ALL' ? 'All Sections' : 'Section ' + s}</button>`;  
+      }).join('');  
+    }  
 
-// 1. Student Login
-app.post('/api/auth/student-login', async (req, res) => {
-  try {
-    const { username, password } = req.body;
-    const student = await Student.findOne({ username: { $regex: new RegExp(`^${username}$`, 'i') } });
-    if (!student || student.password !== password) {
-      return res.status(401).json({ message: "Invalid username or password" });
-    }
-    res.json({ token: "sample-student-token", student });
-  } catch (err) {
-    res.status(500).json({ message: "Server error", error: err.message });
-  }
-});
+    function setSectionFilter(section) {  
+      activeSectionFilter = section;  
+      renderSectionFilterBar();  
+      filterStudentsDirectory();  
+    }  
 
-// 2. Universal Teacher / Portal Login Handler (Supports multiple endpoint aliases)
-const handleTeacherLogin = async (req, res) => {
-  try {
-    const { username, password } = req.body;
-    const teacher = await Teacher.findOne({ username: { $regex: new RegExp(`^${username}$`, 'i') } });
-    
-    if (!teacher || teacher.password !== password) {
-      return res.status(401).json({ message: "Invalid teacher username or password" });
-    }
-    res.json({ token: "sample-teacher-token", teacher, success: true });
-  } catch (err) {
-    res.status(500).json({ message: "Server error", error: err.message });
-  }
-};
+    function filterStudentsDirectory() {  
+      const query = (document.getElementById("searchInput")?.value || "").toLowerCase().trim();  
+      const filtered = studentsCache.filter(s => {  
+        const matchesGrade = activeGradeFilter === 'ALL' || String(s.grade) === activeGradeFilter;  
+        const matchesSection = activeSectionFilter === 'ALL' || String(s.section).toUpperCase() === activeSectionFilter;  
+        const matchesQuery = !query ||   
+          (s.fullName && s.fullName.toLowerCase().includes(query)) ||   
+          (s.username && s.username.toLowerCase().includes(query)) ||   
+          (s.phone && s.phone.toLowerCase().includes(query));  
+        return matchesGrade && matchesSection && matchesQuery;  
+      });  
 
-app.post('/api/auth/teacher-login', handleTeacherLogin);
-app.post('/api/auth/portal-teacher-login', handleTeacherLogin);
-app.post('/api/teacher/login', handleTeacherLogin);
+      updateAnalytics(filtered);  
+      renderAdminStudentsTable(filtered);  
+    }  
 
-// 3. Register a new teacher
-app.post('/api/auth/register-teacher', async (req, res) => {
-  try {
-    const { username, password, fullName, photo, assignments, isAdmin } = req.body;
-    const existingTeacher = await Teacher.findOne({ username: { $regex: new RegExp(`^${username}$`, 'i') } });
-    if (existingTeacher) {
-      return res.status(400).json({ message: "Teacher username already exists." });
-    }
-    const newTeacher = new Teacher({ 
-      username, 
-      password, 
-      fullName: fullName || username,
-      photo: photo || '',
-      isAdmin: isAdmin !== undefined ? isAdmin : false,
-      assignments: assignments || [] 
-    });
-    await newTeacher.save();
-    res.status(201).json({ message: "Teacher registered successfully.", teacher: newTeacher });
-  } catch (error) {
-    res.status(500).json({ message: "Server error creating teacher.", error: error.message });
-  }
-});
+    function updateAnalytics(filteredList) {  
+      document.getElementById("analyticsTotalStudents").textContent = filteredList.length;  
+      if (filteredList.length === 0) {  
+        document.getElementById("analyticsClassAvg").textContent = "0.0%";  
+        document.getElementById("analyticsPassRate").textContent = "0%";  
+        document.getElementById("analyticsTopStudent").textContent = "-";  
+        return;  
+      }  
 
-// 4. Update Teacher Profile or Assignments
-app.put('/api/teachers/:id', async (req, res) => {
-  try {
-    const { fullName, password, photo, assignments } = req.body;
-    const teacher = await Teacher.findById(req.params.id);
-    if (!teacher) return res.status(404).json({ message: "Teacher not found" });
+      let totalAvgSum = 0;  
+      let passCount = 0;  
+      let topStudent = null;  
+      let topAvg = -1;  
 
-    if (fullName !== undefined) teacher.fullName = fullName;
-    if (password !== undefined) teacher.password = password;
-    if (photo !== undefined) teacher.photo = photo;
-    if (assignments !== undefined) teacher.assignments = assignments;
+      filteredList.forEach(s => {  
+        const res = s.results || s.grades || [];  
+        const stats = calculateStats(res);  
+        totalAvgSum += stats.avg;  
+        if (stats.pass) passCount++;  
+        if (stats.avg > topAvg && res.length > 0) {  
+          topAvg = stats.avg;  
+          topStudent = s;  
+        }  
+      });  
 
-    await teacher.save();
-    res.json({ message: "Teacher updated successfully", teacher });
-  } catch (err) {
-    res.status(500).json({ message: "Server error", error: err.message });
-  }
-});
+      const classAvg = (totalAvgSum / filteredList.length).toFixed(1);  
+      const passRate = Math.round((passCount / filteredList.length) * 100);  
 
-// 5. Get all teachers
-app.get('/api/teachers', async (req, res) => {
-  try {
-    const teachers = await Teacher.find();
-    res.json(teachers);
-  } catch (err) {
-    res.status(500).json({ message: "Server error", error: err.message });
-  }
-});
+      document.getElementById("analyticsClassAvg").textContent = `${classAvg}%`;  
+      document.getElementById("analyticsPassRate").textContent = `${passRate}%`;  
+      document.getElementById("analyticsTopStudent").textContent = topStudent ? topStudent.fullName : "-";  
+    }  
 
-// 6. Flexible Delete Teacher Account (Supports MongoDB ID OR Username, protects Admin)
-app.delete('/api/teachers/:idOrUsername', async (req, res) => {
-  try {
-    const identifier = req.params.idOrUsername;
-    
-    // Check if identifier is a valid MongoDB ObjectId or a username string
-    let query = mongoose.Types.ObjectId.isValid(identifier) 
-      ? { _id: identifier } 
-      : { username: { $regex: new RegExp(`^${identifier}$`, 'i') } };
+    function renderAdminStudentsTable(studentsList) {  
+      const tbody = document.getElementById("adminStudentsTableBody");  
+      tbody.innerHTML = "";  
+      if (!studentsList || studentsList.length === 0) {  
+        tbody.innerHTML = `<tr><td colspan="9" class="p-6 text-center text-slate-400">No students found.</td></tr>`;  
+        return;  
+      }  
 
-    const teacherToDelete = await Teacher.findOne(query);
-    if (!teacherToDelete) {
-      return res.status(404).json({ message: "Teacher not found" });
-    }
+      studentsList.forEach(s => {  
+        const res = s.results || s.grades || [];  
+        const stats = calculateStats(res);  
+        const ranks = computeStudentRanks(studentsCache, s);  
+        const pwdDisplay = showPasswordsPlain ? s.password : '••••••••';  
+        const phoneDisplay = s.phone ? `<a href="tel:${s.phone}" class="text-indigo-600 dark:text-indigo-400 hover:underline font-mono">${s.phone}</a>` : '<span class="text-slate-400">-</span>';  
+        const stream = getStudentStream(s.grade, s.section);  
 
-    // Protect the primary Administrator account from deletion
-    if (teacherToDelete.username.toLowerCase() === 'admin' || teacherToDelete.isAdmin) {
-      return res.status(403).json({ message: "Action denied: Cannot delete the administrator account!" });
-    }
+        tbody.innerHTML += `  
+          <tr class="hover:bg-indigo-50/40 dark:hover:bg-slate-800/60 transition cursor-pointer" onclick="openAdminGradeEditor('${s._id}')">  
+            <td class="p-3.5">  
+              <div class="flex items-center gap-3">  
+                ${getAvatarHTML(s, "w-9 h-9")}  
+                <div>  
+                  <div class="font-bold text-slate-900 dark:text-white">${s.fullName}</div>  
+                  <div class="text-xs text-slate-400 font-mono">@${s.username}</div>  
+                </div>  
+              </div>  
+            </td>  
+            <td class="p-3.5 font-mono text-xs">${pwdDisplay}</td>  
+            <td class="p-3.5 text-xs" onclick="event.stopPropagation()">${phoneDisplay}</td>  
+            <td class="p-3.5 text-xs">  
+              <div class="font-bold">Gr ${s.grade} - Sec ${s.section}</div>  
+              <div class="text-[10px] text-slate-400 truncate max-w-[130px]">${stream}</div>  
+            </td>  
+            <td class="p-3.5 text-xs font-semibold text-indigo-600 dark:text-indigo-400">${ranks.sectionRankStr}</td>  
+            <td class="p-3.5 text-xs font-semibold text-emerald-600 dark:text-emerald-400">${ranks.gradeRankStr}</td>  
+            <td class="p-3.5 text-xs font-black">${stats.total} / ${stats.maxTotal}</td>  
+            <td class="p-3.5 text-xs">  
+              <div class="font-bold text-indigo-600 dark:text-indigo-400">${stats.avg}%</div>  
+              <span class="inline-block px-2 py-0.5 rounded text-[10px] font-extrabold ${stats.pass ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400' : 'bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-400'}">${stats.status}</span>  
+            </td>  
+            <td class="p-3.5 text-right" onclick="event.stopPropagation()">  
+              <button onclick="openAdminGradeEditor('${s._id}')" class="px-2.5 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 dark:bg-indigo-950 dark:text-indigo-400 rounded text-xs font-semibold mr-1 transition">Edit Grades</button>  
+              <button onclick="deleteStudent('${s._id}')" class="px-2.5 py-1 bg-red-50 hover:bg-red-100 text-red-600 dark:bg-red-950 dark:text-red-400 rounded text-xs font-semibold transition">Delete</button>  
+            </td>  
+          </tr>  
+        `;  
+      });  
+    }  
 
-    await Teacher.findByIdAndDelete(teacherToDelete._id);
-    res.json({ success: true, message: "Teacher deleted successfully" });
-  } catch (err) {
-    res.status(500).json({ message: "Server error", error: err.message });
-  }
-});
+    function togglePasswordsVisibility() {  
+      showPasswordsPlain = !showPasswordsPlain;  
+      const btn = document.getElementById("togglePasswordsBtn");  
+      btn.textContent = showPasswordsPlain ? "🙈 Hide Passwords" : "👁️ Show Passwords";  
+      filterStudentsDirectory();  
+    }  
 
-// 7. Change Admin Password
-app.post('/api/auth/change-password', async (req, res) => {
-  try {
-    const { oldPassword, newPassword } = req.body;
-    const teacher = await Teacher.findOne({ isAdmin: true }) || await Teacher.findOne();
-    if (!teacher) {
-      return res.status(404).json({ message: "Admin account not found." });
-    }
-    if (teacher.password !== oldPassword) {
-      return res.status(401).json({ message: "Incorrect current password." });
-    }
-    teacher.password = newPassword;
-    await teacher.save();
-    res.status(200).json({ message: "Password updated successfully." });
-  } catch (error) {
-    res.status(500).json({ message: "Server error changing password.", error: error.message });
-  }
-});
+    /* ADMIN GRADE EDITOR SECTION */  
+    function openAdminGradeEditor(studentId) {  
+      selectedStudent = studentsCache.find(s => s._id === studentId);  
+      if (!selectedStudent) return;  
 
-// ==========================================
-// STUDENT & GRADE MANAGEMENT ROUTES
-// ==========================================
+      renderStudentDashboard(selectedStudent, true);  
+      renderAdminGradeEditorTable();  
+    }  
 
-app.get('/api/students', async (req, res) => {
-  try {
-    const students = await Student.find();
-    res.json(students);
-  } catch (err) {
-    res.status(500).json({ message: "Server error", error: err.message });
-  }
-});
+    function renderAdminGradeEditorTable() {  
+      if (!selectedStudent) return;  
+      const gradeSec = document.getElementById("teacherDashboardGradeSection");  
+      gradeSec.classList.remove("hidden");  
+      gradeSec.scrollIntoView({ behavior: 'smooth' });  
 
-app.post('/api/students', async (req, res) => {
-  try {
-    const { username, fullName, password, grade, section, phone, photo, isFirstLogin } = req.body;
-    const existing = await Student.findOne({ username: { $regex: new RegExp(`^${username}$`, 'i') } });
-    if (existing) {
-      return res.status(400).json({ message: "Student username already exists" });
-    }
+      document.getElementById("teacherEditorStreamBadge").textContent = getStudentStream(selectedStudent.grade, selectedStudent.section);  
+      document.getElementById("dashEditPhoneInput").value = selectedStudent.phone || "";  
+      document.getElementById("dashEditPhotoUrlInput").value = selectedStudent.photo || selectedStudent.photoUrl || "";  
 
-    const selectedGrade = grade || "11";
-    const selectedSection = section || "A";
-    const subjectList = getRequiredSubjects(selectedGrade, selectedSection);
+      const results = selectedStudent.results || selectedStudent.grades || [];  
+      const tbody = document.getElementById("dashAdminGradesBody");  
+      tbody.innerHTML = "";  
 
-    const initialResults = subjectList.map(subj => ({
-      subject: subj,
-      score: 0,
-      grade: '-'
-    }));
+      if (results.length === 0) {  
+        tbody.innerHTML = `<tr><td colspan="4" class="p-4 text-center text-slate-400">No subject scores recorded yet. Add custom subject below.</td></tr>`;  
+        return;  
+      }  
 
-    const newStudent = new Student({ 
-      username, 
-      fullName, 
-      password, 
-      grade: selectedGrade, 
-      section: selectedSection, 
-      phone: phone || "",
-      photo: photo || "",
-      isFirstLogin: isFirstLogin !== undefined ? isFirstLogin : true,
-      mustChangePassword: isFirstLogin !== undefined ? isFirstLogin : true,
-      results: initialResults
-    });
+      results.forEach(r => {  
+        const safeSub = r.subject.replace(/\s+/g, '_');  
+        tbody.innerHTML += `  
+          <tr>  
+            <td class="p-3 font-semibold text-slate-800 dark:text-slate-200">${r.subject}</td>  
+            <td class="p-3">  
+              <input type="number" id="dash_score_${safeSub}" min="0" max="100" value="${r.score}" class="w-24 px-2.5 py-1.5 rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-bold focus:ring-2 focus:ring-indigo-600 focus:outline-none">  
+            </td>  
+            <td class="p-3">  
+              <span class="px-2 py-0.5 rounded text-[10px] font-bold ${r.score >= 50 ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400' : 'bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-400'}">${r.score >= 50 ? 'PASS' : 'FAIL'}</span>  
+            </td>  
+            <td class="p-3 text-right">  
+              <button onclick="saveAdminSubjectScore('${r.subject}')" class="px-2.5 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded text-xs font-semibold mr-1 transition shadow-xs">Save</button>  
+              <button onclick="deleteAdminSubjectScore('${r.subject}')" class="px-2.5 py-1 bg-red-100 dark:bg-red-950 text-red-600 dark:text-red-400 rounded text-xs font-semibold hover:bg-red-200 transition">Delete</button>  
+            </td>  
+          </tr>  
+        `;  
+      });  
+    }  
 
-    await newStudent.save();
-    res.status(201).json(newStudent);
-  } catch (err) {
-    res.status(500).json({ message: "Server error", error: err.message });
-  }
-});
+    async function saveAdminSubjectScore(subjectName) {  
+      if (!selectedStudent) return;  
+      const safeSub = subjectName.replace(/\s+/g, '_');  
+      const scoreVal = document.getElementById(`dash_score_${safeSub}`)?.value;  
+      if (scoreVal === "" || isNaN(scoreVal)) {  
+        alert("Please enter a valid score.");  
+        return;  
+      }  
+      const score = parseInt(scoreVal);  
 
-app.put('/api/students/:id', async (req, res) => {
-  try {
-    const { password, results, fullName, phone, photo, isFirstLogin, mustChangePassword } = req.body;
-    const student = await Student.findById(req.params.id);
-    if (!student) return res.status(404).json({ message: "Student not found" });
+      try {  
+        const res = await fetch(`${API_BASE_URL}/students/${selectedStudent._id}/grades`, {  
+          method: 'PUT',  
+          headers: { 'Content-Type': 'application/json' },  
+          body: JSON.stringify({ subject: subjectName, score })  
+        });  
+        const data = await res.json();  
+        if (!res.ok) throw new Error(data.message);  
 
-    if (password !== undefined) student.password = password;
-    if (fullName !== undefined) student.fullName = fullName;
-    if (phone !== undefined) student.phone = phone;
-    if (photo !== undefined) student.photo = photo;
-    if (isFirstLogin !== undefined) student.isFirstLogin = isFirstLogin;
-    if (mustChangePassword !== undefined) student.mustChangePassword = mustChangePassword;
+        selectedStudent.results = data.results || data.grades || [];  
+        const idx = studentsCache.findIndex(s => s._id === selectedStudent._id);  
+        if (idx !== -1) studentsCache[idx].results = selectedStudent.results;  
 
-    if (results && Array.isArray(results)) {
-      student.results = results.map(item => ({
-        subject: item.subject,
-        score: item.score,
-        grade: calculateGrade(item.score)
-      }));
-    }
+        renderStudentDashboard(selectedStudent, true);  
+        renderAdminGradeEditorTable();  
+        filterStudentsDirectory();  
+      } catch (err) {  
+        alert("Error saving score: " + err.message);  
+      }  
+    }  
 
-    await student.save();
-    res.json({ message: "Student updated successfully", student });
-  } catch (err) {
-    res.status(500).json({ message: "Server error", error: err.message });
-  }
-});
+    async function deleteAdminSubjectScore(subjectName) {  
+      if (!selectedStudent || !confirm(`Delete ${subjectName} score for ${selectedStudent.fullName}?`)) return;  
+      try {  
+        const res = await fetch(`${API_BASE_URL}/students/${selectedStudent._id}/grades/${encodeURIComponent(subjectName)}`, {  
+          method: 'DELETE'  
+        });  
+        const data = await res.json();  
+        if (!res.ok) throw new Error(data.message);  
 
-app.put('/api/students/:id/grades', async (req, res) => {
-  try {
-    const { subject, score } = req.body;
-    const student = await Student.findById(req.params.id);
-    if (!student) return res.status(404).json({ message: "Student not found" });
+        selectedStudent.results = data.results || data.grades || [];  
+        const idx = studentsCache.findIndex(s => s._id === selectedStudent._id);  
+        if (idx !== -1) studentsCache[idx].results = selectedStudent.results;  
 
-    let letterGrade = calculateGrade(score);
+        renderStudentDashboard(selectedStudent, true);  
+        renderAdminGradeEditorTable();  
+        filterStudentsDirectory();  
+      } catch (err) {  
+        alert("Error deleting subject: " + err.message);  
+      }  
+    }  
 
-    const existingResult = student.results.find(r => r.subject.toLowerCase() === subject.toLowerCase());
-    if (existingResult) {
-      existingResult.score = Number(score);
-      existingResult.grade = letterGrade;
-    } else {
-      student.results.push({ subject, score: Number(score), grade: letterGrade });
-    }
+    async function addCustomSubject() {  
+      if (!selectedStudent) return;  
+      const subName = document.getElementById("dashCustomSubjectName").value.trim();  
+      const scoreVal = document.getElementById("dashCustomSubjectScore").value;  
 
-    await student.save();
-    res.json(student);
-  } catch (err) {
-    res.status(500).json({ message: "Server server error", error: err.message });
-  }
-});
+      if (!subName || scoreVal === "") {  
+        alert("Please provide both subject name and score.");  
+        return;  
+      }  
 
-app.delete('/api/students/:id', async (req, res) => {
-  try {
-    const deletedStudent = await Student.findByIdAndDelete(req.params.id);
-    if (!deletedStudent) return res.status(404).json({ message: "Student not found" });
-    res.json({ message: "Student deleted successfully" });
-  } catch (err) {
-    res.status(500).json({ message: "Server error", error: err.message });
-  }
-});
+      await saveAdminSubjectScore(subName);  
+      document.getElementById("dashCustomSubjectName").value = "";  
+      document.getElementById("dashCustomSubjectScore").value = "";  
+    }  
 
-// Start Server
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+    async function handleDashUpdateStudentDetails() {  
+      if (!selectedStudent) return;  
+      const phone = document.getElementById("dashEditPhoneInput").value.trim();  
+      const photo = document.getElementById("dashEditPhotoUrlInput").value.trim();  
+
+      try {  
+        const res = await fetch(`${API_BASE_URL}/students/${selectedStudent._id}`, {  
+          method: 'PUT',  
+          headers: { 'Content-Type': 'application/json' },  
+          body: JSON.stringify({ phone, photo })  
+        });  
+        if (!res.ok) throw new Error("Failed to update details");  
+
+        selectedStudent.phone = phone;  
+        selectedStudent.photo = photo;  
+        const idx = studentsCache.findIndex(s => s._id === selectedStudent._id);  
+        if (idx !== -1) {  
+          studentsCache[idx].phone = phone;  
+          studentsCache[idx].photo = photo;  
+        }  
+
+        renderStudentDashboard(selectedStudent, true);  
+        filterStudentsDirectory();  
+        alert("Contact & Photo updated successfully!");  
+      } catch (err) {  
+        alert("Error: " + err.message);  
+      }  
+    }  
+
+    /* RENDER STUDENT DASHBOARD / TRANSCRIPT CERTIFICATE */  
+    function renderStudentDashboard(student, isAdminView = false) {  
+      document.getElementById("loginCard").classList.add("hidden");  
+      document.getElementById("studentDashboardCard").classList.remove("hidden");  
+      document.getElementById("logoutBtn").classList.remove("hidden");  
+
+      const backBtn = document.getElementById("teacherBackBtn");  
+      if (isAdminView) {  
+        backBtn.classList.remove("hidden");  
+      } else {  
+        backBtn.classList.add("hidden");  
+      }  
+
+      const stream = getStudentStream(student.grade, student.section);  
+      document.getElementById("studentNameDisplay").textContent = student.fullName;  
+      document.getElementById("studentMeta").textContent = `Grade ${student.grade || '9'} | Section ${student.section || 'A'} | ${stream}`;  
+      document.getElementById("studentSerialDisplay").textContent = `Serial No: HSS-TR-2026-${student._id ? student._id.substring(student._id.length - 6).toUpperCase() : '000000'}`;  
+      document.getElementById("studentAvatarContainer").innerHTML = getAvatarHTML(student, "w-16 h-16 sm:w-20 sm:h-20");  
+
+      const qrImg = document.getElementById("certQrCode");  
+      if (qrImg) {  
+        qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=HSS-VERIFY-${student._id}`;  
+        document.getElementById("qrcodeContainer").classList.remove("hidden");  
+      }  
+
+      const results = student.results || student.grades || [];  
+      const stats = calculateStats(results);  
+      const ranks = computeStudentRanks(studentsCache, student);  
+
+      document.getElementById("studentTotalDisplay").textContent = `${stats.total} / ${stats.maxTotal}`;  
+      document.getElementById("studentAvgDisplay").textContent = `${stats.avg}%`;  
+
+      const statusBadge = document.getElementById("studentStatusBadge");  
+      statusBadge.innerHTML = stats.pass   
+        ? `<span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400">PASSED</span>`  
+        : `<span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-400">FAILED</span>`;  
+
+      document.getElementById("studentSectionRankDisplay").textContent = ranks.sectionRankStr;  
+      document.getElementById("studentGradeRankDisplay").textContent = ranks.gradeRankStr;  
+
+      const tbody = document.getElementById("studentResultsBody");  
+      tbody.innerHTML = "";  
+
+      if (results.length === 0) {  
+        tbody.innerHTML = `<tr><td colspan="4" class="p-6 text-center text-slate-400">No grades uploaded yet. Check back later.</td></tr>`;  
+        return;  
+      }  
+
+      results.forEach(r => {  
+        const letter = r.score >= 90 ? 'A+' : r.score >= 80 ? 'A' : r.score >= 70 ? 'B' : r.score >= 60 ? 'C' : r.score >= 50 ? 'D' : 'F';  
+        tbody.innerHTML += `  
+          <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition">  
+            <td class="p-3.5 font-bold text-slate-900 dark:text-white">${r.subject}</td>  
+            <td class="p-3.5 font-extrabold text-indigo-600 dark:text-indigo-400 text-base">${r.score} / 100</td>  
+            <td class="p-3.5 font-bold">${letter}</td>  
+            <td class="p-3.5">  
+              <span class="px-2 py-0.5 rounded text-xs font-bold ${r.score >= 50 ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400' : 'bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-400'}">${r.score >= 50 ? 'PASS' : 'FAIL'}</span>  
+            </td>  
+          </tr>  
+        `;  
+      });  
+    }  
+
+    /* STUDENT PROFILE SETTINGS TOGGLE & UPDATE */  
+    function toggleStudentSettings() {  
+      const resultsView = document.getElementById("studentResultsView");  
+      const settingsView = document.getElementById("studentSettingsView");  
+      const isOpen = !settingsView.classList.contains("hidden");  
+
+      if (isOpen) {  
+        settingsView.classList.add("hidden");  
+        resultsView.classList.remove("hidden");  
+      } else {  
+        resultsView.classList.add("hidden");  
+        settingsView.classList.remove("hidden");  
+        const activeStudent = loggedInStudent || selectedStudent;  
+        if (activeStudent) {  
+          document.getElementById("studentEditFullName").value = activeStudent.fullName || "";  
+          document.getElementById("studentEditPhone").value = activeStudent.phone || "";  
+          document.getElementById("studentEditPhotoUrl").value = activeStudent.photo || activeStudent.photoUrl || "";  
+          document.getElementById("studentEditPassword").value = "";  
+          document.getElementById("studentSettingsMsg").textContent = "";  
+        }  
+      }  
+    }  
+
+    async function handleStudentProfileUpdate(e) {  
+      e.preventDefault();  
+      const activeStudent = loggedInStudent || selectedStudent;  
+      if (!activeStudent) return;  
+
+      const fullName = document.getElementById("studentEditFullName").value.trim();  
+      const phone = document.getElementById("studentEditPhone").value.trim();  
+      const photo = document.getElementById("studentEditPhotoUrl").value.trim();  
+      const password = document.getElementById("studentEditPassword").value;  
+      const msgDiv = document.getElementById("studentSettingsMsg");  
+
+      const payload = { fullName, phone, photo };  
+      if (password && password.length >= 4) payload.password = password;  
+
+      try {  
+        const res = await fetch(`${API_BASE_URL}/students/${activeStudent._id}`, {  
+          method: 'PUT',  
+          headers: { 'Content-Type': 'application/json' },  
+          body: JSON.stringify(payload)  
+        });  
+        if (!res.ok) throw new Error("Failed to update student profile");  
+
+        activeStudent.fullName = fullName;  
+        activeStudent.phone = phone;  
+        activeStudent.photo = photo;  
+        if (password) activeStudent.password = password;  
+
+        renderStudentDashboard(activeStudent, !!selectedStudent);  
+        msgDiv.className = "text-emerald-500 font-semibold";  
+        msgDiv.textContent = "Profile updated successfully!";  
+        setTimeout(() => toggleStudentSettings(), 1200);  
+      } catch (err) {  
+        msgDiv.className = "text-red-500 font-semibold";  
+        msgDiv.textContent = "Error: " + err.message;  
+      }  
+    }  
+
+    /* MODAL ACTION HANDLERS */  
+    async function handleRegisterStudent(e) {  
+      e.preventDefault();  
+      const username = document.getElementById("regUsername").value.trim();  
+      const fullName = document.getElementById("regFullName").value.trim();  
+      const password = document.getElementById("regPassword").value.trim();  
+      const grade = document.getElementById("regGrade").value;  
+      const section = document.getElementById("regSection").value;  
+      const countryCode = document.getElementById("regCountryCode").value;  
+      const phoneNum = document.getElementById("regPhoneNumber").value.trim();  
+      const photo = document.getElementById("regPhoto").value.trim();  
+      const msgDiv = document.getElementById("regModalMsg");  
+
+      const phone = phoneNum ? `${countryCode}${phoneNum}` : "";  
+
+      try {  
+        const res = await fetch(`${API_BASE_URL}/students`, {  
+          method: 'POST',  
+          headers: { 'Content-Type': 'application/json' },  
+          body: JSON.stringify({ username, fullName, password, grade, section, phone, photo, isFirstLogin: true })  
+        });  
+        const data = await res.json();  
+        if (!res.ok) throw new Error(data.message || 'Registration failed');  
+
+        studentsCache.push(data.student || data);  
+        closeModal('addStudentModal');  
+        filterStudentsDirectory();  
+        alert(`Student ${fullName} registered successfully!`);  
+      } catch (err) {  
+        msgDiv.className = "text-red-500 text-xs font-semibold";  
+        msgDiv.textContent = err.message;  
+      }  
+    }  
+
+    async function handleRegisterTeacher(e) {  
+      e.preventDefault();  
+      const username = document.getElementById("newTeacherUser").value.trim();  
+      const password = document.getElementById("newTeacherPass").value;  
+      const fullName = document.getElementById("newTeacherFullName").value.trim();  
+      const photo = document.getElementById("newTeacherPhoto").value.trim();  
+      const subject = document.getElementById("assignSubject").value.trim();  
+      const gradesStr = document.getElementById("assignGrades").value.trim();  
+      const sectionsStr = document.getElementById("assignSections").value.trim();  
+      const msgDiv = document.getElementById("teacherModalMsg");  
+
+      const assignments = [];  
+      if (subject) {  
+        const grades = gradesStr ? gradesStr.split(',').map(g => g.trim()) : ['9', '10', '11', '12'];  
+        const sections = sectionsStr ? sectionsStr.split(',').map(s => s.trim().toUpperCase()) : ['A', 'B', 'C', 'D'];  
+        assignments.push({ subject, grades, sections });  
+      }  
+
+      try {  
+        const res = await fetch(`${API_BASE_URL}/teachers`, {  
+          method: 'POST',  
+          headers: { 'Content-Type': 'application/json' },  
+          body: JSON.stringify({ username, password, fullName, photo, assignments })  
+        });  
+        const data = await res.json();  
+        if (!res.ok) throw new Error(data.message || 'Teacher registration failed');  
+
+        teachersCache.push(data.teacher || data);  
+        closeModal('teacherModal');  
+        renderAdminTeachersTable();  
+        alert(`Teacher ${fullName || username} registered successfully!`);  
+      } catch (err) {  
+        msgDiv.className = "text-red-500 text-xs font-semibold";  
+        msgDiv.textContent = err.message;  
+      }  
+    }  
+
+    async function handleChangePassword(e) {  
+      e.preventDefault();  
+      const oldPassword = document.getElementById("oldPassword").value;  
+      const newPassword = document.getElementById("newPassword").value;  
+      const msgDiv = document.getElementById("pwdModalMsg");  
+
+      try {  
+        const res = await fetch(`${API_BASE_URL}/auth/change-admin-password`, {  
+          method: 'PUT',  
+          headers: {   
+            'Content-Type': 'application/json',  
+            'Authorization': `Bearer ${currentAuthToken}`  
+          },  
+          body: JSON.stringify({ oldPassword, newPassword })  
+        });  
+        if (!res.ok) throw new Error("Password change failed. Check old password.");  
+
+        closeModal('passwordModal');  
+        alert("Admin password updated successfully!");  
+      } catch (err) {  
+        msgDiv.className = "text-red-500 text-xs font-semibold";  
+        msgDiv.textContent = err.message;  
+      }  
+    }  
+
+    async function handleCSVUpload(e) {  
+      const file = e.target.files[0];  
+      if (!file) return;  
+
+      const reader = new FileReader();  
+      reader.onload = async function(evt) {  
+        const lines = evt.target.result.split('\n').filter(l => l.trim() !== '');  
+        let successCount = 0;  
+
+        for (let i = 0; i < lines.length; i++) {  
+          const cols = lines[i].split(',').map(c => c.trim());  
+          if (cols.length < 5) continue;  
+          const [username, fullName, password, grade, section, phone, photo] = cols;  
+
+          try {  
+            const res = await fetch(`${API_BASE_URL}/students`, {  
+              method: 'POST',  
+              headers: { 'Content-Type': 'application/json' },  
+              body: JSON.stringify({ username, fullName, password, grade, section, phone: phone || '', photo: photo || '', isFirstLogin: true })  
+            });  
+            if (res.ok) {  
+              const data = await res.json();  
+              studentsCache.push(data.student || data);  
+              successCount++;  
+            }  
+          } catch (err) {}  
+        }  
+
+        alert(`Successfully imported ${successCount} students via CSV!`);  
+        filterStudentsDirectory();  
+        e.target.value = "";  
+      };  
+      reader.readAsText(file);  
+    }  
+
+    async function deleteStudent(studentId) {  
+      if (!confirm("Are you sure you want to delete this student profile?")) return;  
+      try {  
+        const res = await fetch(`${API_BASE_URL}/students/${studentId}`, { method: 'DELETE' });  
+        if (!res.ok) throw new Error("Failed to delete student");  
+
+        studentsCache = studentsCache.filter(s => s._id !== studentId);  
+        if (selectedStudent && selectedStudent._id === studentId) {  
+          selectedStudent = null;  
+          document.getElementById("studentDashboardCard").classList.add("hidden");  
+          document.getElementById("teacherDashboardGradeSection").classList.add("hidden");  
+        }  
+        filterStudentsDirectory();  
+      } catch (err) {  
+        alert("Delete failed: " + err.message);  
+      }  
+    }  
+
+    async function deleteTeacher(teacherId) {  
+      if (!confirm("Are you sure you want to remove this teacher assignment?")) return;  
+      try {  
+        const res = await fetch(`${API_BASE_URL}/teachers/${teacherId}`, { method: 'DELETE' });  
+        if (!res.ok) throw new Error("Failed to delete teacher");  
+
+        teachersCache = teachersCache.filter(t => t._id !== teacherId);  
+        renderAdminTeachersTable();  
+      } catch (err) {  
+        alert("Delete failed: " + err.message);  
+      }  
+    }  
+
+    /* LOGOUT & NAVIGATION */  
+    function logout() {  
+      currentAuthToken = null;  
+      loggedInStudent = null;  
+      loggedInPortalTeacher = null;  
+      selectedStudent = null;  
+
+      document.getElementById("loginCard").classList.remove("hidden");  
+      document.getElementById("portalTeacherDashboardCard").classList.add("hidden");  
+      document.getElementById("studentDashboardCard").classList.add("hidden");  
+      document.getElementById("teacherDashboardCard").classList.add("hidden");  
+      document.getElementById("teacherDashboardGradeSection").classList.add("hidden");  
+      document.getElementById("logoutBtn").classList.add("hidden");  
+
+      document.getElementById("studentFirstName").value = "";  
+      document.getElementById("studentPassword").value = "";  
+      document.getElementById("portalTeacherUsername").value = "";  
+      document.getElementById("portalTeacherPassword").value = "";  
+      document.getElementById("adminUsername").value = "";  
+      document.getElementById("adminPassword").value = "";  
+    }  
+
+    function backToTeacherPortal() {  
+      selectedStudent = null;  
+      document.getElementById("studentDashboardCard").classList.add("hidden");  
+      document.getElementById("teacherDashboardGradeSection").classList.add("hidden");  
+      document.getElementById("teacherDashboardCard").classList.remove("hidden");  
+    }  
+  </script>  
+</body>  
+</html>
