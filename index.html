@@ -748,6 +748,21 @@
       return 'General Secondary Curriculum';
     }
 
+    function getRequiredSubjects(grade, section) {
+      const g = String(grade || '9').trim();
+      const s = String(section || 'A').trim().toUpperCase();
+      if (g === '9' || g === '10') {
+        return ['Amharic', 'English', 'Mathematics', 'Biology', 'Physics', 'Chemistry', 'Geography', 'History', 'Economics', 'Civics', 'IT', 'Sport', 'Art'];
+      } else if (g === '11' || g === '12') {
+        if (s === 'C' || s === 'D') {
+          return ['Amharic', 'English', 'Mathematics', 'History', 'Geography', 'Economics', 'IT', 'Journalism'];
+        } else {
+          return ['Amharic', 'English', 'Mathematics', 'Biology', 'Physics', 'Chemistry', 'Agriculture', 'IT', 'Webdesign'];
+        }
+      }
+      return ['Amharic', 'English', 'Mathematics', 'Biology', 'Physics', 'Chemistry', 'Geography', 'History', 'Economics', 'Civics', 'IT', 'Sport', 'Art'];
+    }
+
     function updateRegSectionOptions() {
       const grade = document.getElementById("regGrade").value;
       const sectionSelect = document.getElementById("regSection");
@@ -1500,7 +1515,45 @@
       const qrData = encodeURIComponent(`Harbu Secondary School Certificate\nName: ${student.fullName}\nGrade: ${student.grade}-${student.section}\nID: ${student._id}`);
       document.getElementById("certQrCode").src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${qrData}`;
 
+      const requiredSubjects = getRequiredSubjects(student.grade, student.section);
       const results = student.results || [];
+
+      // Check if any required subject is missing or has an empty score
+      const missingSubjects = requiredSubjects.filter(reqSub => {
+        const res = results.find(r => r.subject && r.subject.trim().toLowerCase() === reqSub.trim().toLowerCase());
+        return !res || res.score === null || res.score === undefined || res.score === '' || isNaN(Number(res.score));
+      });
+
+      if (missingSubjects.length > 0) {
+        document.getElementById("studentTotalDisplay").textContent = "Incomplete";
+        document.getElementById("studentAvgDisplay").textContent = "Incomplete";
+        document.getElementById("studentSectionRankDisplay").textContent = "N/A";
+        document.getElementById("studentGradeRankDisplay").textContent = "N/A";
+
+        const badgeDiv = document.getElementById("studentStatusBadge");
+        badgeDiv.innerHTML = `<span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300">INCOMPLETE SUBJECT</span>`;
+
+        const tbody = document.getElementById("studentResultsBody");
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="4" class="p-8 text-center bg-amber-50/50 dark:bg-amber-950/20 rounded-xl">
+              <div class="max-w-md mx-auto space-y-3">
+                <div class="text-3xl">⚠️</div>
+                <h4 class="text-base font-bold text-amber-800 dark:text-amber-400">Incomplete the subject</h4>
+                <p class="text-xs text-amber-700 dark:text-amber-300">Your score for one or more required subjects is missing. Your transcript cannot be displayed until all subject scores are registered.</p>
+                <div class="mt-3 text-left bg-white dark:bg-slate-900 p-3 rounded-lg border border-amber-200 dark:border-amber-900 text-xs shadow-xs">
+                  <strong class="text-slate-700 dark:text-slate-300 block mb-1">Missing Subjects:</strong>
+                  <div class="flex flex-wrap gap-1.5">
+                    ${missingSubjects.map(s => `<span class="px-2 py-0.5 bg-amber-100 dark:bg-amber-900/60 text-amber-800 dark:text-amber-300 rounded font-semibold text-[11px]">${s}</span>`).join('')}
+                  </div>
+                </div>
+              </div>
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
       const stats = calculateStats(results);
       const ranks = computeStudentRanks(studentsCache, student);
 
@@ -1703,56 +1756,29 @@
           body: JSON.stringify({ oldPassword, newPassword })
         });
         const data = await res.json();
-        if (!res.ok) throw new Error(data.message || 'Failed to change password');
+        if (!res.ok) throw new Error(data.message || 'Failed to update password');
 
-        msgDiv.textContent = "Admin password updated successfully!";
+        msgDiv.textContent = "Password updated successfully!";
         msgDiv.className = "text-xs font-medium text-emerald-500";
-        setTimeout(() => closeModal('passwordModal'), 1500);
+        setTimeout(() => {
+          closeModal('passwordModal');
+          msgDiv.textContent = "";
+        }, 1500);
       } catch (err) {
         msgDiv.textContent = err.message;
         msgDiv.className = "text-xs font-medium text-red-500";
       }
     }
 
-    function handleCSVUpload(e) {
-      const file = e.target.files[0];
-      if (!file) return;
-
-      const reader = new FileReader();
-      reader.onload = async function(evt) {
-        const lines = evt.target.result.split('\n');
-        let createdCount = 0;
-
-        for (let i = 0; i < lines.length; i++) {
-          const line = lines[i].trim();
-          if (!line) continue;
-          const parts = line.split(',').map(p => p.trim());
-          if (parts.length >= 3) {
-            const [username, fullName, password, grade, section, phone, photo] = parts;
-            try {
-              const res = await fetch(`${API_BASE_URL}/students`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  username,
-                  fullName: fullName || username,
-                  password: password || '1234',
-                  grade: grade || '11',
-                  section: section || 'A',
-                  phone: phone || '',
-                  photo: photo || '',
-                  isFirstLogin: true
-                })
-              });
-              if (res.ok) createdCount++;
-            } catch(err) {}
-          }
-        }
-        alert(`CSV Import finished! Successfully added ${createdCount} students.`);
-        await fetchAdminData();
-        filterStudentsDirectory();
-      };
-      reader.readAsText(file);
+    function logout() {
+      currentAuthToken = null;
+      loggedInStudent = null;
+      loggedInPortalTeacher = null;
+      document.getElementById("studentDashboardCard").classList.add("hidden");
+      document.getElementById("portalTeacherDashboardCard").classList.add("hidden");
+      document.getElementById("teacherDashboardCard").classList.add("hidden");
+      document.getElementById("logoutBtn").classList.add("hidden");
+      document.getElementById("loginCard").classList.remove("hidden");
     }
   </script>
 </body>
